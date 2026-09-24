@@ -140,9 +140,9 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "aws-lc-fips-sys"
-version = "0.13.16"
+version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37b00953a69b2cfb471d13d72538d2e66930832340b0f31deadd404b48c573c5"
+checksum = "03367707e92796b190a4207d4d39b0a4271d574503d2969c2b0cfbf5c87658ee"
 dependencies = [
  "bindgen",
  "cc",
@@ -155,9 +155,9 @@ dependencies = [
 
 [[package]]
 name = "aws-lc-rs"
-version = "1.17.1"
+version = "1.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4342d8937fc7e5dd9b1c60292261c0670c882a2cd1719cfc11b1af41731e32ad"
+checksum = "b281d307588d634de920874890732659e2e7672f72b5e10e81badc1a8a83621e"
 dependencies = [
  "aws-lc-fips-sys",
  "aws-lc-sys",
@@ -167,9 +167,9 @@ dependencies = [
 
 [[package]]
 name = "aws-lc-sys"
-version = "0.42.0"
+version = "0.45.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d9ceb1da931507a12f4fccea479dccd00da1943e1b4ae72d8e502d707361444"
+checksum = "9bff6c3b54fad79a2e60b8102caf565819711497c1f5f092f49508e2f5c31b27"
 dependencies = [
  "cc",
  "cmake",
@@ -207,168 +207,6 @@ name = "base64ct"
 version = "1.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
-
-[[package]]
-name = "bergshamra"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1417958cced16f8f8c81510778e3bd310e6ca1e6392583cc328bdd786576df9d"
-dependencies = [
- "base64 0.22.1",
- "bergshamra-c14n",
- "bergshamra-core",
- "bergshamra-crypto",
- "bergshamra-dsig",
- "bergshamra-enc",
- "bergshamra-keys",
- "bergshamra-transforms",
- "bergshamra-xml",
- "clap",
- "kryptering",
- "uppsala",
-]
-
-[[package]]
-name = "bergshamra-c14n"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0edc3c5e55f4575118593209f9fb6848465a980ab474d938a8031a003bb07941"
-dependencies = [
- "bergshamra-core",
- "bergshamra-xml",
- "memchr",
- "uppsala",
-]
-
-[[package]]
-name = "bergshamra-core"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0d3deb30c7451ff83128c5df7015bd8b2014ffdbba7a913fa7156565098f40e"
-dependencies = [
- "thiserror",
-]
-
-[[package]]
-name = "bergshamra-crypto"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0467fc7bfd9af9b553ff53ee57836313bec45f61af18873f6e8debeb6bf9bfb0"
-dependencies = [
- "bergshamra-core",
- "kryptering",
-]
-
-[[package]]
-name = "bergshamra-dsig"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deb24fea172d5aedea102d5465224f2fc45ea5d29488491f6fc6d629207c19c5"
-dependencies = [
- "base64 0.22.1",
- "bergshamra-c14n",
- "bergshamra-core",
- "bergshamra-crypto",
- "bergshamra-keys",
- "bergshamra-transforms",
- "bergshamra-xml",
- "der 0.7.10",
- "kryptering",
- "uppsala",
- "x509-cert",
-]
-
-[[package]]
-name = "bergshamra-enc"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e9ab732e309f43108a56bae815aa3af4f976c0308c1971060e7bb3d337748bd"
-dependencies = [
- "base64 0.22.1",
- "bergshamra-c14n",
- "bergshamra-core",
- "bergshamra-crypto",
- "bergshamra-keys",
- "bergshamra-transforms",
- "bergshamra-xml",
- "kryptering",
- "uppsala",
-]
-
-[[package]]
-name = "bergshamra-keys"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "297e756d83b30f8de1a8ab03b9d0fb173faf0134a31657307cbb45a7cf7c467a"
-dependencies = [
- "base64 0.22.1",
- "bergshamra-core",
- "bergshamra-crypto",
- "bergshamra-pkcs12",
- "const-oid 0.10.2",
- "der 0.7.10",
- "dsa",
- "ecdsa",
- "ed25519-dalek",
- "kryptering",
- "ml-dsa",
- "num-bigint-dig",
- "num-traits",
- "p256",
- "p384",
- "p521",
- "pem-rfc7468",
- "pkcs1",
- "pkcs8 0.10.2",
- "pkcs8 0.11.0",
- "rsa",
- "signature 2.2.0",
- "slh-dsa",
- "spki 0.7.3",
- "tsp-ltv",
- "uppsala",
- "x25519-dalek",
- "x509-cert",
- "zeroize",
-]
-
-[[package]]
-name = "bergshamra-pkcs12"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81e67239b85153de8127e67afdbe689f8fdaed954242c8596c1f5e3c16382a1d"
-dependencies = [
- "bergshamra-core",
- "cipher 0.5.2",
- "kryptering",
- "yasna",
- "zeroize",
-]
-
-[[package]]
-name = "bergshamra-transforms"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f64c8139f78a32c43645e32ca17b074636b3d51b12cc17b85f6a1499ed24230"
-dependencies = [
- "base64 0.22.1",
- "bergshamra-c14n",
- "bergshamra-core",
- "bergshamra-crypto",
- "bergshamra-keys",
- "bergshamra-xml",
- "uppsala",
-]
-
-[[package]]
-name = "bergshamra-xml"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f823954086a407828da2465c70ba650c3215e009f6640aa08348701d557c13a7"
-dependencies = [
- "bergshamra-core",
- "uppsala",
-]
 
 [[package]]
 name = "bindgen"
@@ -701,9 +539,9 @@ dependencies = [
 
 [[package]]
 name = "cryptoki"
-version = "0.12.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff765b99fc49f3116c9a908484486a2b92fd73c48da45c3a69716471c6cc56c6"
+checksum = "625cf4599c43d69a16996ce2573fc80745a0b0300c962f0bfa11d55b6cab2b2d"
 dependencies = [
  "bitflags",
  "cryptoki-sys",
@@ -1424,52 +1262,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kryptering"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35eb0c42bd90483295061d56a4fbfaeb2dfe817e3e98b3244039cc13ed1fbd15"
-dependencies = [
- "aes 0.9.1",
- "aes-gcm",
- "aes-kw",
- "aws-lc-rs",
- "cbc 0.2.1",
- "crypto-bigint 0.7.5",
- "cryptoki",
- "des 0.9.0",
- "digest 0.10.7",
- "dsa",
- "ecdsa",
- "ed25519-dalek",
- "ed448-goldilocks",
- "generic-array",
- "getrandom 0.4.3",
- "hkdf",
- "hmac 0.12.1",
- "md-5",
- "ml-dsa",
- "ml-kem",
- "p256",
- "p384",
- "p521",
- "pbkdf2",
- "pkcs8 0.10.2",
- "pkcs8 0.11.0",
- "rand",
- "ripemd",
- "rsa",
- "rustls",
- "sha1",
- "sha2 0.10.9",
- "sha3 0.10.9",
- "signature 2.2.0",
- "slh-dsa",
- "thiserror",
- "x25519-dalek",
- "zeroize",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1558,6 +1350,7 @@ dependencies = [
  "pkcs8 0.11.0",
  "shake",
  "signature 3.0.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1662,13 +1455,6 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
-
-[[package]]
-name = "opensaml"
-version = "0.5.0"
-dependencies = [
- "saml-rs",
-]
 
 [[package]]
 name = "p256"
@@ -1958,6 +1744,168 @@ dependencies = [
 ]
 
 [[package]]
+name = "ribergshamra"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4796edcf847a316b29577f196103df7e2e94541d9c2d758db9a33404db99c471"
+dependencies = [
+ "base64 0.22.1",
+ "clap",
+ "ribergshamra-c14n",
+ "ribergshamra-core",
+ "ribergshamra-crypto",
+ "ribergshamra-dsig",
+ "ribergshamra-enc",
+ "ribergshamra-keys",
+ "ribergshamra-transforms",
+ "ribergshamra-xml",
+ "riptering",
+ "uppsala",
+]
+
+[[package]]
+name = "ribergshamra-c14n"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b32610ce1bf1eff4a6716df61438fe85175953961d06cbf9260ce0f0391365b"
+dependencies = [
+ "memchr",
+ "ribergshamra-core",
+ "ribergshamra-xml",
+ "uppsala",
+]
+
+[[package]]
+name = "ribergshamra-core"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfbabac2026a97390e705097d6aac9bd049b7409198cc549a8509436e3c5c1cd"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "ribergshamra-crypto"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a733682453f44329860b3db82420db9c07018a21fad270c5b7bfb5f849d9779"
+dependencies = [
+ "ribergshamra-core",
+ "riptering",
+]
+
+[[package]]
+name = "ribergshamra-dsig"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "704d71f1c06f4cfa3dc375294af9185dfaad9c4e439c28df514eae5995619f6a"
+dependencies = [
+ "base64 0.22.1",
+ "der 0.7.10",
+ "ribergshamra-c14n",
+ "ribergshamra-core",
+ "ribergshamra-crypto",
+ "ribergshamra-keys",
+ "ribergshamra-transforms",
+ "ribergshamra-xml",
+ "riptering",
+ "uppsala",
+ "x509-cert",
+]
+
+[[package]]
+name = "ribergshamra-enc"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b526c394379c1a2958ca7cddd7af136d01ec2c04ad3a77eda96f6c2b0134a5c1"
+dependencies = [
+ "base64 0.22.1",
+ "ribergshamra-c14n",
+ "ribergshamra-core",
+ "ribergshamra-crypto",
+ "ribergshamra-keys",
+ "ribergshamra-transforms",
+ "ribergshamra-xml",
+ "riptering",
+ "uppsala",
+]
+
+[[package]]
+name = "ribergshamra-keys"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04fa8ae52868bffa80de0dbd0558c38fdc8ab0547c382c4374e377dd954de4a6"
+dependencies = [
+ "base64 0.22.1",
+ "const-oid 0.10.2",
+ "der 0.7.10",
+ "dsa",
+ "ecdsa",
+ "ed25519-dalek",
+ "ml-dsa",
+ "num-bigint-dig",
+ "num-traits",
+ "p256",
+ "p384",
+ "p521",
+ "pem-rfc7468",
+ "pkcs1",
+ "pkcs8 0.10.2",
+ "pkcs8 0.11.0",
+ "ribergshamra-core",
+ "ribergshamra-crypto",
+ "ribergshamra-pkcs12",
+ "riptering",
+ "ritsp-ltv",
+ "rsa",
+ "signature 2.2.0",
+ "slh-dsa",
+ "spki 0.7.3",
+ "uppsala",
+ "x25519-dalek",
+ "x509-cert",
+ "zeroize",
+]
+
+[[package]]
+name = "ribergshamra-pkcs12"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db7ce7d56580ab6b601a41620096e596dde99c473d7859c2280458bffd08165c"
+dependencies = [
+ "cipher 0.5.2",
+ "ribergshamra-core",
+ "riptering",
+ "yasna",
+ "zeroize",
+]
+
+[[package]]
+name = "ribergshamra-transforms"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01ebcc93b43040390057310f994266084a14afd55630c81d91b7067a41e9beff"
+dependencies = [
+ "base64 0.22.1",
+ "ribergshamra-c14n",
+ "ribergshamra-core",
+ "ribergshamra-crypto",
+ "ribergshamra-keys",
+ "ribergshamra-xml",
+ "uppsala",
+]
+
+[[package]]
+name = "ribergshamra-xml"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bccfd1c0b4bd0ff44354f6d7f6161f850e54fe4aceb25c1e561e3916456a0645"
+dependencies = [
+ "ribergshamra-core",
+ "uppsala",
+]
+
+[[package]]
 name = "ring"
 version = "0.17.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1978,6 +1926,86 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd124222d17ad93a644ed9d011a40f4fb64aa54275c08cc216524a9ea82fb09f"
 dependencies = [
  "digest 0.10.7",
+]
+
+[[package]]
+name = "riptering"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc42e1aef25e1cee3331109dc14051a6120734a3b9e3dc1c4f026b0cdcba512"
+dependencies = [
+ "aes 0.9.1",
+ "aes-gcm",
+ "aes-kw",
+ "aws-lc-rs",
+ "cbc 0.2.1",
+ "crypto-bigint 0.7.5",
+ "cryptoki",
+ "des 0.9.0",
+ "digest 0.10.7",
+ "dsa",
+ "ecdsa",
+ "ed25519-dalek",
+ "ed448-goldilocks",
+ "generic-array",
+ "getrandom 0.4.3",
+ "hkdf",
+ "hmac 0.12.1",
+ "md-5",
+ "ml-dsa",
+ "ml-kem",
+ "p256",
+ "p384",
+ "p521",
+ "pbkdf2",
+ "pkcs8 0.10.2",
+ "pkcs8 0.11.0",
+ "rand",
+ "ripemd",
+ "rsa",
+ "rustls",
+ "sha1",
+ "sha2 0.10.9",
+ "sha3 0.10.9",
+ "signature 2.2.0",
+ "slh-dsa",
+ "thiserror",
+ "x25519-dalek",
+ "zeroize",
+]
+
+[[package]]
+name = "risaml"
+version = "0.6.0"
+dependencies = [
+ "base64 0.23.0",
+ "flate2",
+ "quick-xml",
+ "ribergshamra",
+ "thiserror",
+ "time",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "ritsp-ltv"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31cea033da0795e7f819b244bb124c067ef9516896c19a10b54481ca91e83a19"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "cms",
+ "const-oid 0.9.6",
+ "der 0.7.10",
+ "hex",
+ "log",
+ "pem-rfc7468",
+ "riptering",
+ "spki 0.7.3",
+ "thiserror",
+ "x509-cert",
 ]
 
 [[package]]
@@ -2017,9 +2045,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.43"
+version = "0.23.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0283386ce02abc0151e1761d08802dfe86c173b0b494af5cbc086574e453da06"
+checksum = "0d41d731c7d2f962d1ccc364cec258de3c0e93b38c2fb3ba97ac74513048d634"
 dependencies = [
  "aws-lc-rs",
  "once_cell",
@@ -2040,21 +2068,14 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.13"
+version = "0.103.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61c429a8649f110dddef65e2a5ad240f747e85f7758a6bccc7e5777bd33f756e"
+checksum = "f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2"
 dependencies = [
  "aws-lc-rs",
  "ring",
  "rustls-pki-types",
  "untrusted 0.9.0",
-]
-
-[[package]]
-name = "rustsaml"
-version = "0.5.0"
-dependencies = [
- "saml-rs",
 ]
 
 [[package]]
@@ -2070,34 +2091,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97a22f5af31f73a954c10289c93e8a50cc23d971e80ee446f1f6f7137a088213"
 dependencies = [
  "cipher 0.4.4",
-]
-
-[[package]]
-name = "saml-rs"
-version = "0.5.0"
-dependencies = [
- "base64 0.23.0",
- "bergshamra",
- "flate2",
- "quick-xml",
- "thiserror",
- "time",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "samlet"
-version = "0.5.0"
-dependencies = [
- "saml-rs",
-]
-
-[[package]]
-name = "samlify"
-version = "0.5.0"
-dependencies = [
- "saml-rs",
 ]
 
 [[package]]
@@ -2492,26 +2485,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tsp-ltv"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce76d3fd38735dbbbf634c55708fdf0633acfc5c5d906998d25617115ff93bb2"
-dependencies = [
- "base64 0.22.1",
- "chrono",
- "cms",
- "const-oid 0.9.6",
- "der 0.7.10",
- "hex",
- "kryptering",
- "log",
- "pem-rfc7468",
- "spki 0.7.3",
- "thiserror",
- "x509-cert",
-]
-
-[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2547,9 +2520,9 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
 name = "uppsala"
-version = "0.9.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b83b4950a552cd9812b6afd150ea10729617d28208bba122912eb196c2261d4d"
+checksum = "a27f7d40a93824eefcf6b62fd2fa86bca9ea6a5825de56b4aa9a5ed7804b766c"
 
 [[package]]
 name = "url"
