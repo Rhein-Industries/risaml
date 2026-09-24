@@ -1,13 +1,13 @@
-use saml_rs::binding::{base64_decode, deflate_raw_decode};
-use saml_rs::constants::Binding;
-use saml_rs::entity::{EntitySetting, User};
-use saml_rs::logout::{
+use risaml::binding::{base64_decode, deflate_raw_decode};
+use risaml::constants::Binding;
+use risaml::entity::{EntitySetting, User};
+use risaml::logout::{
     create_logout_request, create_logout_request_with_id, create_logout_response,
 };
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::template::LOGOUT_REQUEST_TEMPLATE;
-use saml_rs::xml::dom::parse;
-use saml_rs::{IdentityProvider, SamlError, ServiceProvider};
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::template::LOGOUT_REQUEST_TEMPLATE;
+use risaml::xml::dom::parse;
+use risaml::{IdentityProvider, SamlError, ServiceProvider};
 
 fn idp() -> Result<IdentityProvider, SamlError> {
     IdentityProvider::from_config(

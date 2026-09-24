@@ -9,12 +9,12 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use saml_rs::binding::{base64_decode, base64_encode, deflate_raw_decode, deflate_raw_encode};
-use saml_rs::error::{SignatureVerificationReason, TimeWindowField};
-use saml_rs::raw::{Binding, FlowResult};
-use saml_rs::util::Value;
-use saml_rs::xml::dom::parse;
-use saml_rs::{
+use risaml::binding::{base64_decode, base64_encode, deflate_raw_decode, deflate_raw_encode};
+use risaml::error::{SignatureVerificationReason, TimeWindowField};
+use risaml::raw::{Binding, FlowResult};
+use risaml::util::Value;
+use risaml::xml::dom::parse;
+use risaml::{
     AcsEndpoint, BrowserInput, CertificatePem, ClockSkew, Credentials, EntityId, FormField,
     IdpConfig, IdpDescriptor, IdpValidationPolicy, LogoutBinding, LogoutRequest, LogoutResponse,
     LogoutSigning, LogoutSubject, MetadataTrustPolicy, NameId, NameIdFormat, Outbound,
@@ -222,13 +222,13 @@ fn bad_profile_template_idp_config() -> Result<IdpConfig, SamlError> {
     ))
 }
 
-fn facades() -> Result<(Saml<saml_rs::Sp>, Saml<saml_rs::Idp>), SamlError> {
+fn facades() -> Result<(Saml<risaml::Sp>, Saml<risaml::Idp>), SamlError> {
     Ok((Saml::sp(sp_config()?)?, Saml::idp(idp_config()?)?))
 }
 
 fn descriptors(
-    sp: &Saml<saml_rs::Sp>,
-    idp: &Saml<saml_rs::Idp>,
+    sp: &Saml<risaml::Sp>,
+    idp: &Saml<risaml::Idp>,
 ) -> Result<(SpDescriptor, IdpDescriptor), SamlError> {
     let sp_descriptor = SpDescriptor::from_metadata_xml_for(
         EntityId::try_new(SP_ENTITY_ID)?,
@@ -253,7 +253,7 @@ fn subject() -> Result<LogoutSubject, SamlError> {
 fn validation() -> SamlValidationContext<'static> {
     SamlValidationContext::new(
         SystemTime::now(),
-        saml_rs::ReplayPolicy::DisabledForCompatibility,
+        risaml::ReplayPolicy::DisabledForCompatibility,
     )
 }
 
@@ -460,8 +460,8 @@ enum StartedSloResult {
 }
 
 struct SloExchange {
-    sp: Saml<saml_rs::Sp>,
-    idp: Saml<saml_rs::Idp>,
+    sp: Saml<risaml::Sp>,
+    idp: Saml<risaml::Idp>,
     sp_descriptor: SpDescriptor,
     idp_descriptor: IdpDescriptor,
     pending: PendingLogoutRequest,
@@ -730,7 +730,7 @@ fn typed_facade_runs_sp_initiated_slo() -> Result<(), Box<dyn std::error::Error>
     assert_eq!(completed.peer_entity_id().as_str(), IDP_ENTITY_ID);
     assert_eq!(
         completed.status(),
-        Some(saml_rs::constants::status_code::SUCCESS)
+        Some(risaml::constants::status_code::SUCCESS)
     );
     let response = completed.response().ok_or("missing logout response")?;
     assert_eq!(response.in_response_to(), Some(exchange.pending.id()));
@@ -865,7 +865,7 @@ fn typed_facade_receive_slo_uses_not_on_or_after_deadline_without_generic_retent
         received
             .message()
             .not_on_or_after()
-            .map(saml_rs::SamlInstant::as_str),
+            .map(risaml::SamlInstant::as_str),
         Some("2026-07-15T12:01:00Z")
     );
     Ok(())
@@ -1712,7 +1712,7 @@ fn typed_facade_rejects_slo_response_binding_mismatch() -> Result<(), Box<dyn st
         validation(),
     ) {
         Err(SamlError::UnsupportedBinding { binding }) => {
-            assert_eq!(binding, saml_rs::raw::Binding::Post);
+            assert_eq!(binding, risaml::raw::Binding::Post);
             Ok(())
         }
         other => Err(format!("expected UnsupportedBinding, got {other:?}").into()),

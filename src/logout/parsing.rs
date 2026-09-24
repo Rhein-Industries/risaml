@@ -9,7 +9,7 @@ use std::time::SystemTime;
 ///
 /// `IssueInstant` is required and must use the SAML UTC `xs:dateTime` lexical
 /// form. No maximum request age is inferred from `IssueInstant`. An optional
-/// `NotOnOrAfter` uses the same UTC form; saml-rs rejects the request at or
+/// `NotOnOrAfter` uses the same UTC form; risaml rejects the request at or
 /// after that instant, widened by the configured `NotOnOrAfter` clock drift.
 /// This fail-closed expiration check is library policy: SAML permits, but does
 /// not require, a recipient to discard an expired request.

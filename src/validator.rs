@@ -27,7 +27,7 @@ pub(crate) fn offset_datetime_from_system_time(
     })
 }
 
-/// Validate saml-rs' fail-closed expiration policy for an inbound LogoutRequest.
+/// Validate risaml's fail-closed expiration policy for an inbound LogoutRequest.
 ///
 /// The protocol profile layer owns SAML lexical conformance. Values that are
 /// lexically valid but cannot be represented by the runtime clock fail here as

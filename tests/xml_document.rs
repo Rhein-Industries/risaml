@@ -1,7 +1,7 @@
-use saml_rs::binding::{base64_encode, deflate_raw_encode};
-use saml_rs::constants::{Binding, ParserType};
-use saml_rs::flow::{flow, FlowOptions, HttpRequest};
-use saml_rs::SamlError;
+use risaml::binding::{base64_encode, deflate_raw_encode};
+use risaml::constants::{Binding, ParserType};
+use risaml::flow::{flow, FlowOptions, HttpRequest};
+use risaml::SamlError;
 
 const AUTHN_REQUEST: &str = concat!(
     "<samlp:AuthnRequest ",

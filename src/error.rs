@@ -1,4 +1,4 @@
-//! Error types for `saml-rs`.
+//! Error types for `risaml`.
 //!
 //! [`SamlError`] is non-exhaustive. Callers should include a fallback match arm
 //! so new semantic SAML validation failures can be added without breaking

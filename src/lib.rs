@@ -1,4 +1,10 @@
-//! `saml-rs` - SAML 2.0 Service Provider and Identity Provider support.
+//! `risaml` - SAML 2.0 Service Provider and Identity Provider support.
+//!
+//! risaml is Rhein Industries' maintained fork of
+//! [saml-rs](https://github.com/salasebas/opensaml-rs) by Sebastian Sala,
+//! starting from saml-rs 0.5.0. It is not affiliated with or endorsed by the
+//! upstream author; report problems at
+//! <https://github.com/Rhein-Industries/risaml/issues>.
 //!
 //! # Start here
 //!
@@ -18,9 +24,9 @@
 //! [`SamlValidationContext::with_replay_retention`].
 //!
 //! ```
-//! use saml_rs::{AcsEndpoint, EntityId, SpConfig, SpValidationPolicy};
+//! use risaml::{AcsEndpoint, EntityId, SpConfig, SpValidationPolicy};
 //!
-//! # fn main() -> Result<(), saml_rs::SamlError> {
+//! # fn main() -> Result<(), risaml::SamlError> {
 //! let config = SpConfig::builder(EntityId::try_new("https://sp.example.com/metadata")?)
 //!     .acs_endpoint(AcsEndpoint::post("https://sp.example.com/acs")?)
 //!     .validation(SpValidationPolicy::compatibility())
@@ -37,7 +43,7 @@
 //! ACS endpoint receives the SAML response.
 //!
 //! ```no_run
-//! use saml_rs::{
+//! use risaml::{
 //!     AcsEndpoint, BrowserInput, EntityId, FormField, IdpDescriptor,
 //!     MetadataTrustPolicy, ReplayPolicy, Saml, SamlValidationContext, SpConfig,
 //!     SpValidationPolicy, SsoResponse, StartSso,
@@ -47,7 +53,7 @@
 //! # fn run(
 //! #     idp_metadata_xml: &str,
 //! #     form_fields: Vec<FormField>,
-//! # ) -> Result<(), saml_rs::SamlError> {
+//! # ) -> Result<(), risaml::SamlError> {
 //! let sp = Saml::sp(
 //!     SpConfig::builder(EntityId::try_new("https://sp.example.com/metadata")?)
 //!         .acs_endpoint(AcsEndpoint::post("https://sp.example.com/acs")?)
@@ -86,17 +92,17 @@
 //! caller choice rather than a missing pending request.
 //!
 //! ```no_run
-//! use saml_rs::{
+//! use risaml::{
 //!     BrowserInput, FormField, IdpDescriptor, ReplayPolicy, Saml,
 //!     SamlValidationContext, SsoResponse,
 //! };
 //! use std::time::SystemTime;
 //!
 //! # fn accept(
-//! #     sp: &Saml<saml_rs::Sp>,
+//! #     sp: &Saml<risaml::Sp>,
 //! #     idp: &IdpDescriptor,
 //! #     form_fields: Vec<FormField>,
-//! # ) -> Result<(), saml_rs::SamlError> {
+//! # ) -> Result<(), risaml::SamlError> {
 //! let validation = SamlValidationContext::new(
 //!     SystemTime::now(),
 //!     ReplayPolicy::DisabledForCompatibility,
@@ -117,17 +123,17 @@
 //! returns the typed browser response.
 //!
 //! ```no_run
-//! use saml_rs::{
+//! use risaml::{
 //!     AuthnRequest, BrowserInput, FormField, NameId, ReplayPolicy, RespondSso,
 //!     Saml, SamlValidationContext, SpDescriptor, Subject,
 //! };
 //! use std::time::SystemTime;
 //!
 //! # fn respond(
-//! #     idp: &Saml<saml_rs::Idp>,
+//! #     idp: &Saml<risaml::Idp>,
 //! #     sp: &SpDescriptor,
 //! #     request_fields: Vec<FormField>,
-//! # ) -> Result<(), saml_rs::SamlError> {
+//! # ) -> Result<(), risaml::SamlError> {
 //! let validation = SamlValidationContext::new(
 //!     SystemTime::now(),
 //!     ReplayPolicy::DisabledForCompatibility,
@@ -154,26 +160,26 @@
 //! returned [`PendingLogoutRequest`], and finish only with the matching
 //! [`LogoutResponse`]. Receiving and responding to peer-initiated logout uses
 //! [`Received<LogoutRequest>`] instead of free-form request ID strings.
-//! Inbound LogoutRequest messages require a UTC `IssueInstant`, but saml-rs
+//! Inbound LogoutRequest messages require a UTC `IssueInstant`, but risaml
 //! applies no library-selected maximum age to it. Optional UTC
 //! `NotOnOrAfter` values are rejected at their skew-adjusted exclusive
-//! deadline as a fail-closed saml-rs policy, not an OASIS receiver `MUST`.
+//! deadline as a fail-closed risaml policy, not an OASIS receiver `MUST`.
 //! [`ClockSkew`] controls that tolerance, and replay storage uses the same
 //! effective deadline when it is present.
 //!
 //! ```no_run
-//! use saml_rs::{
+//! use risaml::{
 //!     BrowserInput, FormField, IdpDescriptor, LogoutResponse, ReplayPolicy,
 //!     Saml, SamlValidationContext, SsoSession, StartSlo,
 //! };
 //! use std::time::SystemTime;
 //!
 //! # fn logout(
-//! #     sp: &Saml<saml_rs::Sp>,
+//! #     sp: &Saml<risaml::Sp>,
 //! #     idp: &IdpDescriptor,
 //! #     session: &SsoSession,
 //! #     response_fields: Vec<FormField>,
-//! # ) -> Result<(), saml_rs::SamlError> {
+//! # ) -> Result<(), risaml::SamlError> {
 //! if let Some(subject) = session.logout_subject() {
 //!     let started = sp.start_slo(idp, subject, StartSlo::post())?;
 //!     let validation = SamlValidationContext::new(
@@ -198,18 +204,18 @@
 //! be used to finish Web SSO:
 //!
 //! ```compile_fail
-//! use saml_rs::{
+//! use risaml::{
 //!     BrowserInput, IdpDescriptor, PendingLogoutRequest, Saml,
 //!     SamlValidationContext, SsoResponse,
 //! };
 //!
 //! fn wrong(
-//!     sp: &Saml<saml_rs::Sp>,
+//!     sp: &Saml<risaml::Sp>,
 //!     idp: &IdpDescriptor,
 //!     pending: &PendingLogoutRequest,
 //!     input: BrowserInput<SsoResponse>,
 //!     validation: SamlValidationContext<'_>,
-//! ) -> Result<(), saml_rs::SamlError> {
+//! ) -> Result<(), risaml::SamlError> {
 //!     let _ = sp.finish_sso(idp, pending, input, validation)?;
 //!     Ok(())
 //! }
@@ -219,13 +225,13 @@
 //! arbitrary request ID strings:
 //!
 //! ```compile_fail
-//! use saml_rs::{RespondSlo, Saml, SpDescriptor};
+//! use risaml::{RespondSlo, Saml, SpDescriptor};
 //!
 //! fn wrong(
-//!     idp: &Saml<saml_rs::Idp>,
+//!     idp: &Saml<risaml::Idp>,
 //!     sp: &SpDescriptor,
 //!     request_id: &str,
-//! ) -> Result<(), saml_rs::SamlError> {
+//! ) -> Result<(), risaml::SamlError> {
 //!     let _ = idp.respond_slo(sp, request_id, RespondSlo::post())?;
 //!     Ok(())
 //! }

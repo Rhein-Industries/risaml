@@ -1,3 +1,7 @@
+# risaml CI. Every job runs on GitHub-hosted runners and uses no repository
+# secrets. Publishing is manual (see RELEASE.md): upstream saml-rs's
+# release-plz workflow, which used crates.io trusted publishing configured for
+# the saml-rs crate, is not part of the fork.
 name: CI
 
 on:
@@ -52,10 +56,10 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - run: cargo check -p saml-rs --no-default-features
-      - run: cargo test -p saml-rs --no-default-features --test no_default_features
-      - run: cargo test -p saml-rs --doc --no-default-features
-      - run: RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p saml-rs --lib --no-deps --no-default-features
+      - run: cargo check -p risaml --no-default-features
+      - run: cargo test -p risaml --no-default-features --test no_default_features
+      - run: cargo test -p risaml --doc --no-default-features
+      - run: RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p risaml --lib --no-deps --no-default-features
 
   provider-matrix:
     name: Crypto provider (${{ matrix.provider }})
@@ -97,10 +101,10 @@ jobs:
       - uses: taiki-e/install-action@cfdc41eb4dcb5a6d098e06c87a1e91076b799307 # zizmor: ignore[impostor-commit,ref-version-mismatch]
       - run: cargo check --workspace --locked --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
       - run: cargo clippy --workspace --locked --all-targets --no-default-features --features "$CRYPTO_PROVIDER_FEATURES" -- -D warnings
-      - run: RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p saml-rs --lib --no-deps --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
+      - run: RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p risaml --lib --no-deps --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
       - name: Run provider security regressions
         run: >-
-          cargo nextest run -p saml-rs --locked
+          cargo nextest run -p risaml --locked
           --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
           --test provider_regression
           --test index_conformance
@@ -111,7 +115,7 @@ jobs:
           --test external_slo_redirect
       - name: Run provider error propagation regression
         run: >-
-          cargo nextest run -p saml-rs --locked
+          cargo nextest run -p risaml --locked
           --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
           --lib detached_verification_preserves_provider_error unloadable_peer
 
@@ -127,28 +131,13 @@ jobs:
           toolchain: 1.88.0
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - uses: taiki-e/install-action@cfdc41eb4dcb5a6d098e06c87a1e91076b799307 # nextest
-      - run: cargo nextest run -p saml-rs --locked
-      - run: cargo test -p saml-rs --doc --locked
+      - run: cargo nextest run -p risaml --locked
+      - run: cargo test -p risaml --doc --locked
 
-  semver:
-    name: Semver
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - uses: obi1kenobi/cargo-semver-checks-action@6b69fcf40e9b5fb17adeb57e4b6ecd020649a239 # v2
-        with:
-          package: saml-rs
-          # Provider features are mutually exclusive. The default feature set
-          # exposes the provider-neutral public API used for semver checks.
-          feature-group: default-features
-          # saml-rs is still pre-1.0; intentional breaking API changes are
-          # released as 0.x minor bumps. release-plz decides the actual bump
-          # from Conventional Commits.
-          release-type: major
+  # The upstream cargo-semver-checks job compared the package against its
+  # latest crates.io release. risaml has no crates.io release yet, so there is
+  # no baseline to compare against; restore the job (package: risaml) once
+  # risaml 0.6.0 is published.
 
   test:
     name: Test ${{ matrix.package }}
@@ -158,7 +147,7 @@ jobs:
       fail-fast: true
       matrix:
         package:
-          - saml-rs
+          - risaml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -173,32 +162,6 @@ jobs:
       - run: cargo run -p ${{ matrix.package }} --example sso
       - run: cargo run -p ${{ matrix.package }} --example slo
 
-  compatibility:
-    name: Compatibility ${{ matrix.package }}
-    runs-on: ubuntu-latest
-    strategy:
-      # Abort the whole matrix as soon as one package fails.
-      fail-fast: true
-      matrix:
-        package:
-          - opensaml
-          - samlify
-          - rustsaml
-          - samlet
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - uses: taiki-e/install-action@cfdc41eb4dcb5a6d098e06c87a1e91076b799307 # nextest
-      - run: cargo nextest run -p ${{ matrix.package }}
-      - run: cargo test -p ${{ matrix.package }} --doc
-      - run: RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p ${{ matrix.package }} --lib --no-deps
-      - run: cargo check -p ${{ matrix.package }} --all-targets --no-default-features
-      - run: cargo nextest run -p ${{ matrix.package }} --no-default-features
-      - run: cargo test -p ${{ matrix.package }} --doc --no-default-features
-
   ci:
     name: CI
     runs-on: ubuntu-latest
@@ -208,9 +171,7 @@ jobs:
       - feature-check
       - provider-matrix
       - msrv
-      - semver
       - test
-      - compatibility
     if: always()
     steps:
       - name: Check required jobs

@@ -33,13 +33,13 @@ impl Saml<Sp> {
     /// # Examples
     ///
     /// ```
-    /// use saml_rs::{
+    /// use risaml::{
     ///     AcsEndpoint, EntityId, IdpConfig, IdpDescriptor, IdpValidationPolicy,
     ///     MetadataTrustPolicy, RelayStateParam, Saml, SpConfig, SpValidationPolicy,
     ///     SsoEndpoint, StartSso,
     /// };
     ///
-    /// # fn main() -> Result<(), saml_rs::SamlError> {
+    /// # fn main() -> Result<(), risaml::SamlError> {
     /// let sp_config = SpConfig::builder(EntityId::try_new("https://sp.example.com/metadata")?)
     ///     .acs_endpoint(AcsEndpoint::post("https://sp.example.com/acs")?)
     ///     .validation(SpValidationPolicy::compatibility())
@@ -114,18 +114,18 @@ impl Saml<Sp> {
     /// # Examples
     ///
     /// ```no_run
-    /// use saml_rs::{
+    /// use risaml::{
     ///     BrowserInput, FormField, IdpDescriptor, PendingAuthnRequest, ReplayPolicy, Saml,
     ///     SamlValidationContext, SsoResponse,
     /// };
     /// use std::time::SystemTime;
     ///
     /// # fn finish(
-    /// #     sp: &Saml<saml_rs::Sp>,
+    /// #     sp: &Saml<risaml::Sp>,
     /// #     idp: &IdpDescriptor,
     /// #     pending: &PendingAuthnRequest,
     /// #     fields: Vec<FormField>,
-    /// # ) -> Result<(), saml_rs::SamlError> {
+    /// # ) -> Result<(), risaml::SamlError> {
     /// let validation = SamlValidationContext::new(
     ///     SystemTime::now(),
     ///     ReplayPolicy::DisabledForCompatibility,

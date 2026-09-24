@@ -39,7 +39,7 @@ impl MessageField {
 /// # Examples
 ///
 /// ```
-/// use saml_rs::{AuthnRequest, BrowserInput, FormField, SsoResponse};
+/// use risaml::{AuthnRequest, BrowserInput, FormField, SsoResponse};
 ///
 /// let redirect = BrowserInput::<AuthnRequest>::redirect("SAMLRequest=...");
 /// let post = BrowserInput::<SsoResponse>::post(vec![
@@ -52,7 +52,7 @@ impl MessageField {
 /// SSO responses are received through POST-family bindings, not Redirect:
 ///
 /// ```compile_fail
-/// use saml_rs::{BrowserInput, SsoResponse};
+/// use risaml::{BrowserInput, SsoResponse};
 ///
 /// let _ = BrowserInput::<SsoResponse>::redirect("SAMLResponse=...");
 /// ```

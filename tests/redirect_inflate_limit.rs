@@ -1,12 +1,12 @@
-use saml_rs::binding::{
+use risaml::binding::{
     base64_encode, deflate_raw_decode, deflate_raw_encode, MAX_DEFLATE_RAW_DECODE_BYTES,
 };
-use saml_rs::constants::{Binding, ParserType};
-use saml_rs::entity::EntitySetting;
-use saml_rs::flow::{flow, FlowOptions, HttpRequest};
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::xml::XmlLimits;
-use saml_rs::{IdentityProvider, SamlError, ServiceProvider};
+use risaml::constants::{Binding, ParserType};
+use risaml::entity::EntitySetting;
+use risaml::flow::{flow, FlowOptions, HttpRequest};
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::xml::XmlLimits;
+use risaml::{IdentityProvider, SamlError, ServiceProvider};
 use url::Url;
 
 const LIMIT_ERROR: &str = "ERR_DEFLATE_OUTPUT_LIMIT_EXCEEDED";

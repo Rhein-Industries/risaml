@@ -1,8 +1,9 @@
-# saml-rs Agent Guide
+# risaml Agent Guide
 
 This is a Rust package for SAML 2.0 Service Provider and Identity Provider
-support. Keep this file short and operational: it should tell agents how to
-work in the repo, not restate the README.
+support: risaml, Rhein Industries' maintained fork of saml-rs (forked from
+saml-rs 0.5.0). Keep this file short and operational: it should tell agents
+how to work in the repo, not restate the README.
 
 ## Repo Shape
 
@@ -54,6 +55,14 @@ work in the repo, not restate the README.
 - Do not present library safety or application policy as an OASIS wire
   requirement, and do not invent validation for unspecified behavior.
 
+## Fork Rules
+
+- Do not change SAML protocol constants (URNs, namespaces, bindings, NameID
+  formats, status codes) or anything under `tests/fixtures/` as part of
+  renaming or dependency work.
+- Keep upstream saml-rs history (CHANGELOG entries, migration-guide prose,
+  ADRs) as written; update only code paths and commands in them.
+
 ## Fixture Provenance
 
 - Historical fixture provenance is documented in
@@ -67,19 +76,19 @@ effects:
 
 ```bash
 cargo fmt --all --check
-cargo clippy -p saml-rs --all-targets -- -D warnings
-cargo nextest run -p saml-rs
+cargo clippy -p risaml --all-targets -- -D warnings
+cargo nextest run -p risaml
 ```
 
 When touching shared configuration, release metadata, or feature boundaries,
 also check:
 
 ```bash
-cargo test -p saml-rs --doc
-RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p saml-rs --lib --no-deps
-cargo test -p saml-rs --doc --no-default-features
-RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p saml-rs --lib --no-deps --no-default-features
-cargo check -p saml-rs --no-default-features
+cargo test -p risaml --doc
+RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p risaml --lib --no-deps
+cargo test -p risaml --doc --no-default-features
+RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p risaml --lib --no-deps --no-default-features
+cargo check -p risaml --no-default-features
 ```
 
 Do not use `--all-features`. Document-crypto providers are mutually exclusive.
@@ -128,19 +137,20 @@ Add regression tests for security fixes.
 
 ## Docs And Releases
 
-- Do not hardcode future release versions in docs. This repository uses
-  release-plz and Conventional Commits to decide the next version.
-- The published crate is `saml-rs`, and Rust imports use `saml_rs`.
-- Do not edit `CHANGELOG.md` by hand. release-plz writes it from Conventional
-  Commits on the release PR.
+- Do not hardcode future release versions in docs outside `CHANGELOG.md` and
+  `Cargo.toml`.
+- The crate is `risaml`, and Rust imports use `risaml`.
+- `CHANGELOG.md` is maintained by hand: add changes under `Unreleased`.
+  Publishing is manual; see `RELEASE.md`. No workflow publishes or uses
+  repository secrets.
 
 ## Agent skills
 
 ### Issue tracker
 
-Public requests and external collaboration use GitHub Issues. Private planning
-initiated by the maintainer uses the private `OpenSaml` Linear team. See
-`docs/agents/issue-tracker.md` for routing and privacy rules.
+Requests and collaboration use GitHub Issues at
+<https://github.com/Rhein-Industries/risaml/issues>. See
+`docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

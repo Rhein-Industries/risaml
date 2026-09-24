@@ -4,17 +4,17 @@
     feature = "crypto-fips"
 ))]
 
-use saml_rs::binding::{base64_decode, base64_encode};
-use saml_rs::constants::signature_algorithm::RSA_SHA256;
-use saml_rs::constants::{status_code, Binding, ParserType};
-use saml_rs::entity::{iso8601_offset, EntitySetting, User};
-use saml_rs::error::{SignatureVerificationReason, TimeWindowField};
-use saml_rs::flow::HttpRequest;
-use saml_rs::idp::LoginResponseOptions;
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::template::{replace_tags_by_value, LOGIN_RESPONSE_TEMPLATE};
-use saml_rs::validator::check_status;
-use saml_rs::{IdentityProvider, SamlError, ServiceProvider};
+use risaml::binding::{base64_decode, base64_encode};
+use risaml::constants::signature_algorithm::RSA_SHA256;
+use risaml::constants::{status_code, Binding, ParserType};
+use risaml::entity::{iso8601_offset, EntitySetting, User};
+use risaml::error::{SignatureVerificationReason, TimeWindowField};
+use risaml::flow::HttpRequest;
+use risaml::idp::LoginResponseOptions;
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::template::{replace_tags_by_value, LOGIN_RESPONSE_TEMPLATE};
+use risaml::validator::check_status;
+use risaml::{IdentityProvider, SamlError, ServiceProvider};
 
 const PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
 const CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");

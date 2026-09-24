@@ -36,18 +36,18 @@ impl Saml<Idp> {
     /// # Examples
     ///
     /// ```no_run
-    /// use saml_rs::{
+    /// use risaml::{
     ///     AuthnRequest, BrowserInput, FormField, ReplayPolicy, RespondSso, Saml,
     ///     SamlValidationContext, SpDescriptor, Subject,
     /// };
     /// use std::time::SystemTime;
     ///
     /// # fn respond(
-    /// #     idp: &Saml<saml_rs::Idp>,
+    /// #     idp: &Saml<risaml::Idp>,
     /// #     sp: &SpDescriptor,
     /// #     fields: Vec<FormField>,
     /// #     subject: Subject,
-    /// # ) -> Result<(), saml_rs::SamlError> {
+    /// # ) -> Result<(), risaml::SamlError> {
     /// let validation = SamlValidationContext::new(
     ///     SystemTime::now(),
     ///     ReplayPolicy::DisabledForCompatibility,
@@ -128,20 +128,20 @@ impl Saml<Idp> {
     /// # Examples
     ///
     /// ```no_run
-    /// use saml_rs::{
+    /// use risaml::{
     ///     BrowserInput, FormField, IdpDescriptor, ReplayPolicy, RespondSso, Saml,
     ///     SamlValidationContext, SpDescriptor, SsoResponse, Subject,
     /// };
     /// use std::time::SystemTime;
     ///
     /// # fn initiate(
-    /// #     idp: &Saml<saml_rs::Idp>,
-    /// #     sp: &Saml<saml_rs::Sp>,
+    /// #     idp: &Saml<risaml::Idp>,
+    /// #     sp: &Saml<risaml::Sp>,
     /// #     sp_descriptor: &SpDescriptor,
     /// #     idp_descriptor: &IdpDescriptor,
     /// #     subject: Subject,
     /// #     form_fields: Vec<FormField>,
-    /// # ) -> Result<(), saml_rs::SamlError> {
+    /// # ) -> Result<(), risaml::SamlError> {
     /// let response = idp.initiate_sso(sp_descriptor, subject, RespondSso::post())?;
     /// let form = response.post_form()?;
     /// # let _ = form;

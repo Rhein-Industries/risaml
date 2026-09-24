@@ -41,7 +41,7 @@ New integrations should use the crate-root re-exports and visible docs.rs
 modules as the supported public documentation surface. The visible modules are
 `browser`, `config`, `constants`, `error`, `metadata`, `model`, and `raw`.
 Advanced callers that need the lower-level compatibility API should import it
-through `saml_rs::raw`.
+through `risaml::raw`.
 
 Some root modules remain publicly importable but hidden from docs.rs. These
 hidden public modules are not the recommended starting point for new
@@ -154,7 +154,7 @@ not carry keys, raw metadata, or raw entity settings.
 The typed API is additive first. The raw API remains available:
 
 ```rust
-use saml_rs::raw::{
+use risaml::raw::{
     BindingContext, EntitySetting, FlowResult, HttpRequest, IdentityProvider,
     ServiceProvider,
 };

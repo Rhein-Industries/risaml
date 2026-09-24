@@ -6,10 +6,10 @@
 
 use std::time::{Duration, SystemTime};
 
-use saml_rs::binding::{base64_decode, base64_encode, deflate_raw_decode, deflate_raw_encode};
-use saml_rs::error::SignatureVerificationReason;
-use saml_rs::xml::{extract, ExtractorField};
-use saml_rs::{
+use risaml::binding::{base64_decode, base64_encode, deflate_raw_decode, deflate_raw_encode};
+use risaml::error::SignatureVerificationReason;
+use risaml::xml::{extract, ExtractorField};
+use risaml::{
     AcsEndpoint, BrowserInput, EntityId, IdpConfig, IdpDescriptor, IdpValidationPolicy,
     LogoutPolicy, LogoutRequest, MetadataTrustPolicy, ReplayCache, ReplayKey, ReplayPolicy, Saml,
     SamlError, SamlValidationContext, SloEndpoint, SpConfig, SpDescriptor, SpValidationPolicy,
@@ -85,7 +85,7 @@ fn assert_redirect_wire(query: &str, relay_state: Option<&str>) {
     ));
 }
 
-fn sp_receiver() -> Result<Saml<saml_rs::Sp>, SamlError> {
+fn sp_receiver() -> Result<Saml<risaml::Sp>, SamlError> {
     let mut validation = SpValidationPolicy::compatibility();
     validation.logout = LogoutPolicy::strict();
     Saml::sp(
@@ -105,7 +105,7 @@ fn shibboleth_idp_descriptor() -> Result<IdpDescriptor, SamlError> {
     )
 }
 
-fn idp_receiver() -> Result<Saml<saml_rs::Idp>, SamlError> {
+fn idp_receiver() -> Result<Saml<risaml::Idp>, SamlError> {
     let mut validation = IdpValidationPolicy::compatibility();
     validation.logout = LogoutPolicy::strict();
     Saml::idp(

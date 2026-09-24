@@ -127,7 +127,7 @@ impl ReplayKey {
 /// ```
 /// use std::{collections::HashMap, time::{Duration, SystemTime}};
 ///
-/// use saml_rs::{
+/// use risaml::{
 ///     ReplayCache, ReplayKey, ReplayPolicy, SamlError, SamlValidationContext,
 /// };
 ///

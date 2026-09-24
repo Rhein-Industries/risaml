@@ -1,13 +1,13 @@
 //! Black-box conformance scenarios over the public API, including historical
 //! regression cases derived from npm `samlify` behavior.
 
-use saml_rs::binding::{base64_decode, deflate_raw_decode};
-use saml_rs::constants::Binding;
-use saml_rs::entity::EntitySetting;
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::{IdentityProvider, ServiceProvider};
+use risaml::binding::{base64_decode, deflate_raw_decode};
+use risaml::constants::Binding;
+use risaml::entity::EntitySetting;
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::{IdentityProvider, ServiceProvider};
 
-fn sp(setting: EntitySetting) -> Result<ServiceProvider, saml_rs::SamlError> {
+fn sp(setting: EntitySetting) -> Result<ServiceProvider, risaml::SamlError> {
     ServiceProvider::from_config(
         &SpMetadataConfig {
             entity_id: "https://sp.example.com/metadata".into(),
@@ -31,7 +31,7 @@ fn sp(setting: EntitySetting) -> Result<ServiceProvider, saml_rs::SamlError> {
     feature = "crypto-aws-lc",
     feature = "crypto-fips"
 ))]
-fn idp(setting: EntitySetting) -> Result<IdentityProvider, saml_rs::SamlError> {
+fn idp(setting: EntitySetting) -> Result<IdentityProvider, risaml::SamlError> {
     IdentityProvider::from_config(
         &IdpMetadataConfig {
             entity_id: "https://idp.example.com/metadata".into(),
@@ -96,9 +96,9 @@ fn sp_metadata_generate_parse_round_trips() -> Result<(), Box<dyn std::error::Er
 ))]
 mod signed {
     use super::*;
-    use saml_rs::constants::signature_algorithm::RSA_SHA256;
-    use saml_rs::flow::HttpRequest;
-    use saml_rs::logout::{create_logout_request, parse_logout_request};
+    use risaml::constants::signature_algorithm::RSA_SHA256;
+    use risaml::flow::HttpRequest;
+    use risaml::logout::{create_logout_request, parse_logout_request};
 
     const PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
     const CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");
@@ -119,8 +119,8 @@ mod signed {
         let response = idp.create_login_response(
             &sp,
             Binding::Post,
-            &saml_rs::entity::User::new("alice@example.com"),
-            &saml_rs::idp::LoginResponseOptions {
+            &risaml::entity::User::new("alice@example.com"),
+            &risaml::idp::LoginResponseOptions {
                 in_response_to: Some("_r1"),
                 ..Default::default()
             },
@@ -141,7 +141,7 @@ mod signed {
             &sp.metadata,
             &idp.metadata,
             Binding::Post,
-            &saml_rs::entity::User::new("alice@example.com"),
+            &risaml::entity::User::new("alice@example.com"),
             None,
             true, // want signed
         )?;

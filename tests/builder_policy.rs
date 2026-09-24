@@ -1,6 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
-use saml_rs::{
+use risaml::{
     AcsEndpoint, AlgorithmPolicy, AssertionEncryptionPolicy, AssertionSignaturePolicy,
     AudienceValidationPolicy, AuthnRequestSigningPolicy, AuthnRequestValidationPolicy,
     CertificatePem, Credentials, DataEncryptionAlgorithm, DigestAlgorithm, EntityId, EntitySetting,
@@ -44,14 +44,14 @@ fn sp_builder_and_struct_literal_reach_same_config() -> Result<(), Box<dyn std::
     let builder = SpConfig::builder(entity_id.clone())
         .acs_endpoint(acs.clone())
         .slo_endpoint(slo.clone())
-        .name_id_format(saml_rs::NameIdFormat::EmailAddress)
+        .name_id_format(risaml::NameIdFormat::EmailAddress)
         .credentials(credentials.clone())
         .validation(validation.clone())
         .build()?;
     let literal = SpConfig {
         entity_id,
         metadata: SpMetadataConfig {
-            name_id_format: vec![saml_rs::NameIdFormat::EmailAddress],
+            name_id_format: vec![risaml::NameIdFormat::EmailAddress],
             single_logout_service: vec![slo],
             assertion_consumer_service: vec![acs],
             elements_order: None,

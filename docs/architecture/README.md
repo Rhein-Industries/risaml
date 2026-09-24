@@ -4,7 +4,8 @@ This directory captures maintainer notes for the typed public API. Keep these
 files aligned with the implemented facade rather than treating them as a
 separate future design.
 
-The current crate package is `saml-rs`; Rust users import it as `saml_rs`.
+The current crate package is `risaml` (Rhein Industries' fork of saml-rs,
+which used `saml-rs` / `saml_rs`); Rust users import it as `risaml`.
 The current low-level flow API stays supported as raw compatibility while the
 new typed API becomes the recommended path.
 
@@ -39,7 +40,7 @@ new typed API becomes the recommended path.
 ## High-Level Shape
 
 ```rust
-use saml_rs::{
+use risaml::{
     AuthnRequest, BrowserInput, IdpDescriptor, MetadataTrustPolicy, Pending,
     ReplayPolicy, Saml, SamlValidationContext, Sp, SpConfig, SsoResponse, StartSso,
 };

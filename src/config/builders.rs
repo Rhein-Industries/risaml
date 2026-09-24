@@ -29,7 +29,7 @@ use super::policies::{
 /// # Examples
 ///
 /// ```
-/// use saml_rs::{AcsEndpoint, EntityId, SpConfig, SpMetadataConfig};
+/// use risaml::{AcsEndpoint, EntityId, SpConfig, SpMetadataConfig};
 ///
 /// let acs = AcsEndpoint::post("https://sp.example.com/acs")?;
 /// let config = SpConfig::try_new(
@@ -38,7 +38,7 @@ use super::policies::{
 /// )?;
 ///
 /// assert_eq!(config.entity_id.as_str(), "https://sp.example.com/metadata");
-/// # Ok::<(), saml_rs::SamlError>(())
+/// # Ok::<(), risaml::SamlError>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct SpConfig {
@@ -216,7 +216,7 @@ impl SpConfigBuilder {
 /// feature.
 ///
 /// ```
-/// use saml_rs::{EntityId, IdpConfig, IdpValidationPolicy, SsoEndpoint};
+/// use risaml::{EntityId, IdpConfig, IdpValidationPolicy, SsoEndpoint};
 /// use std::time::Duration;
 ///
 /// let config = IdpConfig::builder(EntityId::try_new("https://idp.example.com/metadata")?)
@@ -226,7 +226,7 @@ impl SpConfigBuilder {
 ///     .build()?;
 ///
 /// assert_eq!(config.entity_id.as_str(), "https://idp.example.com/metadata");
-/// # Ok::<(), saml_rs::SamlError>(())
+/// # Ok::<(), risaml::SamlError>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct IdpConfig {
@@ -239,7 +239,7 @@ pub struct IdpConfig {
     /// Lifetime applied to assertions issued by this IdP and to
     /// Session Authority LogoutRequests.
     ///
-    /// The default is exactly five minutes. That value is saml-rs policy, not
+    /// The default is exactly five minutes. That value is risaml policy, not
     /// an OASIS-mandated duration.
     pub issuance_lifetime: Duration,
     /// Validation policy.

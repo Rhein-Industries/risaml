@@ -1,12 +1,12 @@
-use saml_rs::binding::base64_encode;
-use saml_rs::constants::Binding;
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::raw::{BindingContext, FlowResult};
-use saml_rs::template::{LoginResponseAttribute, LoginResponseTemplate};
-use saml_rs::util::Value;
-use saml_rs::xml::XmlLimits;
-use saml_rs::{raw::LoginResponseOptions, raw::User};
-use saml_rs::{
+use risaml::binding::base64_encode;
+use risaml::constants::Binding;
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::raw::{BindingContext, FlowResult};
+use risaml::template::{LoginResponseAttribute, LoginResponseTemplate};
+use risaml::util::Value;
+use risaml::xml::XmlLimits;
+use risaml::{raw::LoginResponseOptions, raw::User};
+use risaml::{
     AcsEndpoint, AuthnRequest, BrowserInput, EndpointUrl, EntityId, EntitySetting, FormField,
     IdentityProvider, LogoutCompleted, LogoutRequest, LogoutResponse, MessageId,
     NameIdCreationRequest, NameIdFormat, NameIdPolicy, Outbound, PendingAuthnRequest, RelayState,
@@ -115,9 +115,9 @@ fn signed_response_binding_context(binding: Binding) -> BindingContext {
 
 fn assert_browser_input_invalid<Message>(input: BrowserInput<Message>)
 where
-    saml_rs::raw::HttpRequest: TryFrom<BrowserInput<Message>, Error = SamlError>,
+    risaml::raw::HttpRequest: TryFrom<BrowserInput<Message>, Error = SamlError>,
 {
-    let result = saml_rs::raw::HttpRequest::try_from(input);
+    let result = risaml::raw::HttpRequest::try_from(input);
 
     assert!(matches!(result, Err(SamlError::Invalid(_))));
 }
@@ -339,7 +339,7 @@ fn typed_models_redirect_browser_input_converts_to_http_request(
         "?SAMLRequest=abc&RelayState=relay&SigAlg=alg&Signature=sig",
     );
 
-    let request = saml_rs::raw::HttpRequest::try_from(input)?;
+    let request = risaml::raw::HttpRequest::try_from(input)?;
 
     assert_eq!(
         request.query,
@@ -364,7 +364,7 @@ fn typed_models_sso_response_browser_input_rejects_redirect() {
         _message: std::marker::PhantomData,
     };
 
-    let result = saml_rs::raw::HttpRequest::try_from(input);
+    let result = risaml::raw::HttpRequest::try_from(input);
 
     assert!(matches!(result, Err(SamlError::UndefinedBinding)));
 }
@@ -382,7 +382,7 @@ fn typed_models_redirect_browser_input_uses_canonical_signed_octets_with_extra_p
         "?ignored=before&Signature=sig&SAMLRequest=abc%2Bdef&RelayState=relay%20state&extra=after&SigAlg=http%3A%2F%2Fexample.com%2Falg",
     );
 
-    let request = saml_rs::raw::HttpRequest::try_from(input)?;
+    let request = risaml::raw::HttpRequest::try_from(input)?;
 
     assert_eq!(
         request.octet_string.as_deref(),
@@ -419,7 +419,7 @@ fn typed_models_redirect_browser_input_rejects_duplicate_signed_fields() {
     ] {
         let input = BrowserInput::<AuthnRequest>::redirect(raw_query);
 
-        let result = saml_rs::raw::HttpRequest::try_from(input);
+        let result = risaml::raw::HttpRequest::try_from(input);
 
         assert!(
             matches!(result, Err(SamlError::Invalid(_))),
@@ -445,7 +445,7 @@ fn typed_models_post_browser_input_preserves_fields() -> Result<(), Box<dyn std:
         FormField::new("RelayState", ""),
     ]);
 
-    let request = saml_rs::raw::HttpRequest::try_from(input)?;
+    let request = risaml::raw::HttpRequest::try_from(input)?;
 
     assert_eq!(
         request.body,
@@ -467,8 +467,8 @@ fn typed_models_post_browser_input_accepts_response_markers(
     ]);
     let logout = BrowserInput::<LogoutResponse>::post(vec![FormField::new("SAMLResponse", "def")]);
 
-    let sso_request = saml_rs::raw::HttpRequest::try_from(sso)?;
-    let logout_request = saml_rs::raw::HttpRequest::try_from(logout)?;
+    let sso_request = risaml::raw::HttpRequest::try_from(sso)?;
+    let logout_request = risaml::raw::HttpRequest::try_from(logout)?;
 
     assert_eq!(
         sso_request.body,
@@ -530,7 +530,7 @@ fn typed_models_simplesign_browser_input_derives_signed_octets(
         FormField::new("Signature", "sig"),
     ]);
 
-    let request = saml_rs::raw::HttpRequest::try_from(input)?;
+    let request = risaml::raw::HttpRequest::try_from(input)?;
 
     assert_eq!(
         request.octet_string.as_deref(),
@@ -556,8 +556,8 @@ fn typed_models_simplesign_browser_input_accepts_response_markers(
         FormField::new("Signature", "sig"),
     ]);
 
-    let sso_request = saml_rs::raw::HttpRequest::try_from(sso)?;
-    let logout_request = saml_rs::raw::HttpRequest::try_from(logout)?;
+    let sso_request = risaml::raw::HttpRequest::try_from(sso)?;
+    let logout_request = risaml::raw::HttpRequest::try_from(logout)?;
 
     assert_eq!(
         sso_request.octet_string.as_deref(),
@@ -621,7 +621,7 @@ fn typed_models_simplesign_browser_input_accepts_raw_body_only(
         "SAMLRequest=PHNhbWxwOkF1dGhuUmVxdWVzdC8%2B&RelayState=relay&SigAlg=alg&Signature=sig",
     );
 
-    let request = saml_rs::raw::HttpRequest::try_from(input)?;
+    let request = risaml::raw::HttpRequest::try_from(input)?;
 
     assert_eq!(
         request.body,
@@ -655,8 +655,8 @@ fn typed_models_logout_browser_input_preserves_detached_signature_octets(
         FormField::new("Signature", "sig"),
     ]);
 
-    let redirect_request = saml_rs::raw::HttpRequest::try_from(redirect)?;
-    let simple_sign_request = saml_rs::raw::HttpRequest::try_from(simple_sign)?;
+    let redirect_request = risaml::raw::HttpRequest::try_from(redirect)?;
+    let simple_sign_request = risaml::raw::HttpRequest::try_from(simple_sign)?;
 
     assert_eq!(
         redirect_request.octet_string.as_deref(),
@@ -679,7 +679,7 @@ fn typed_models_simplesign_browser_input_bounds_decoded_xml() {
     ]);
 
     assert!(matches!(
-        saml_rs::raw::HttpRequest::try_from(input),
+        risaml::raw::HttpRequest::try_from(input),
         Err(SamlError::Invalid(_))
     ));
 }
@@ -790,7 +790,7 @@ fn typed_models_authn_request_from_flow_result_exposes_typed_fields(
     assert_eq!(
         request
             .name_id_policy()
-            .and_then(saml_rs::NameIdPolicy::allow_create),
+            .and_then(risaml::NameIdPolicy::allow_create),
         Some(true)
     );
     assert_eq!(request.raw_flow().saml_content, "<samlp:AuthnRequest/>");
@@ -1134,7 +1134,7 @@ fn typed_models_sso_session_from_flow_result_preserves_multi_valued_attributes(
         "2024-01-01T00:00:01Z"
     );
     assert_eq!(
-        session.assertion().id().map(saml_rs::AssertionId::as_str),
+        session.assertion().id().map(risaml::AssertionId::as_str),
         Some("_assertion123")
     );
     assert_eq!(session.name_id().value(), "alice@example.com");
@@ -1143,7 +1143,7 @@ fn typed_models_sso_session_from_flow_result_preserves_multi_valued_attributes(
         affiliation
             .values()
             .iter()
-            .map(saml_rs::AttributeValue::as_str)
+            .map(risaml::AttributeValue::as_str)
             .collect::<Vec<_>>(),
         vec!["users", "examplerole1"]
     );
@@ -1532,7 +1532,7 @@ fn typed_models_existing_authn_request_flow_converts_to_typed_request(
     let idp = idp(EntitySetting::default())?;
     let context = sp.create_login_request(&idp, Binding::Post, None)?;
     let request =
-        saml_rs::raw::HttpRequest::post(vec![("SAMLRequest".to_string(), context.context.clone())]);
+        risaml::raw::HttpRequest::post(vec![("SAMLRequest".to_string(), context.context.clone())]);
 
     let parsed = idp.parse_login_request(&sp, Binding::Post, &request)?;
     let typed = AuthnRequest::try_from(parsed)?;
@@ -1557,7 +1557,7 @@ fn typed_models_existing_login_response_flow_converts_to_typed_session(
         },
     )?;
     let request =
-        saml_rs::raw::HttpRequest::post(vec![("SAMLResponse".to_string(), context.context)]);
+        risaml::raw::HttpRequest::post(vec![("SAMLResponse".to_string(), context.context)]);
 
     let parsed =
         sp.parse_login_response_with_request_id(&idp, Binding::Post, &request, "_request123")?;
@@ -1604,7 +1604,7 @@ fn typed_models_existing_login_response_flow_preserves_multi_value_attributes(
         },
     )?;
     let request =
-        saml_rs::raw::HttpRequest::post(vec![("SAMLResponse".to_string(), context.context)]);
+        risaml::raw::HttpRequest::post(vec![("SAMLResponse".to_string(), context.context)]);
 
     let parsed =
         sp.parse_login_response_with_request_id(&idp, Binding::Post, &request, "_request123")?;
@@ -1629,7 +1629,7 @@ fn typed_models_existing_login_response_flow_preserves_multi_value_attributes(
         affiliation
             .values()
             .iter()
-            .map(saml_rs::AttributeValue::as_str)
+            .map(risaml::AttributeValue::as_str)
             .collect::<Vec<_>>(),
         vec!["users", "examplerole1"]
     );
@@ -1644,7 +1644,7 @@ fn typed_models_pending_snapshot_round_trips_without_raw_state(
         RelayStateParam::try_from_option(Some("relay".to_string()))?,
         AcsEndpoint::post("https://sp.example.com/acs")?.with_index(3),
         SsoResponseBinding::Post,
-        saml_rs::EntityId::try_new("https://idp.example.com/metadata")?,
+        risaml::EntityId::try_new("https://idp.example.com/metadata")?,
     )?
     .with_request_binding(SsoRequestBinding::Redirect)
     .with_issue_instant(SamlInstant::try_new("2026-07-04T12:00:00Z")?)
@@ -1690,7 +1690,7 @@ fn typed_models_pending_snapshot_validates_expiration_requires_issue_instant(
         RelayStateParam::Absent,
         AcsEndpoint::post("https://sp.example.com/acs")?,
         SsoResponseBinding::Post,
-        saml_rs::EntityId::try_new("https://idp.example.com/metadata")?,
+        risaml::EntityId::try_new("https://idp.example.com/metadata")?,
     )?;
     let mut snapshot = pending.snapshot();
     snapshot.expires_at = Some(SamlInstant::try_new("2026-07-04T12:05:00Z")?);

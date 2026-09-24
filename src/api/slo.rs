@@ -32,13 +32,13 @@ impl Saml<Sp> {
     /// # Examples
     ///
     /// ```no_run
-    /// use saml_rs::{IdpDescriptor, LogoutSubject, Saml, StartSlo};
+    /// use risaml::{IdpDescriptor, LogoutSubject, Saml, StartSlo};
     ///
     /// # fn logout(
-    /// #     sp: &Saml<saml_rs::Sp>,
+    /// #     sp: &Saml<risaml::Sp>,
     /// #     idp: &IdpDescriptor,
     /// #     subject: LogoutSubject,
-    /// # ) -> Result<(), saml_rs::SamlError> {
+    /// # ) -> Result<(), risaml::SamlError> {
     /// let started = sp.start_slo(idp, subject, StartSlo::post())?;
     /// let form = started.outbound.post_form()?;
     /// let snapshot = started.pending.snapshot();
@@ -71,7 +71,7 @@ impl Saml<Sp> {
     /// the binding is unsupported for logout, IdP metadata cannot be parsed,
     /// XML parsing or signature/trust validation fails, required
     /// `IssueInstant` or optional `NotOnOrAfter` is not conformant,
-    /// `NotOnOrAfter` has expired under saml-rs' fail-closed policy, the
+    /// `NotOnOrAfter` has expired under risaml's fail-closed policy, the
     /// destination does not match local metadata, or replay validation detects
     /// a duplicate or unusable expiration.
     pub fn receive_slo(
@@ -126,18 +126,18 @@ impl Saml<Sp> {
     /// # Examples
     ///
     /// ```no_run
-    /// use saml_rs::{
+    /// use risaml::{
     ///     BrowserInput, FormField, IdpDescriptor, LogoutResponse, PendingLogoutRequest,
     ///     ReplayPolicy, Saml, SamlValidationContext,
     /// };
     /// use std::time::SystemTime;
     ///
     /// # fn finish(
-    /// #     sp: &Saml<saml_rs::Sp>,
+    /// #     sp: &Saml<risaml::Sp>,
     /// #     idp: &IdpDescriptor,
     /// #     pending: &PendingLogoutRequest,
     /// #     fields: Vec<FormField>,
-    /// # ) -> Result<(), saml_rs::SamlError> {
+    /// # ) -> Result<(), risaml::SamlError> {
     /// let validation = SamlValidationContext::new(
     ///     SystemTime::now(),
     ///     ReplayPolicy::DisabledForCompatibility,
@@ -191,13 +191,13 @@ impl Saml<Idp> {
     /// # Examples
     ///
     /// ```no_run
-    /// use saml_rs::{LogoutSubject, Saml, SpDescriptor, StartSlo};
+    /// use risaml::{LogoutSubject, Saml, SpDescriptor, StartSlo};
     ///
     /// # fn logout(
-    /// #     idp: &Saml<saml_rs::Idp>,
+    /// #     idp: &Saml<risaml::Idp>,
     /// #     sp: &SpDescriptor,
     /// #     subject: LogoutSubject,
-    /// # ) -> Result<(), saml_rs::SamlError> {
+    /// # ) -> Result<(), risaml::SamlError> {
     /// let started = idp.start_slo(sp, subject, StartSlo::post())?;
     /// let form = started.outbound.post_form()?;
     /// let snapshot = started.pending.snapshot();
@@ -232,24 +232,24 @@ impl Saml<Idp> {
     /// the binding is unsupported for logout, SP metadata cannot be parsed, XML
     /// parsing or signature/trust validation fails, required `IssueInstant` or
     /// optional `NotOnOrAfter` is not conformant, `NotOnOrAfter` has expired
-    /// under saml-rs' fail-closed policy, the destination does not match local
+    /// under risaml's fail-closed policy, the destination does not match local
     /// metadata, or replay validation detects a duplicate or unusable
     /// expiration.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use saml_rs::{
+    /// use risaml::{
     ///     BrowserInput, FormField, LogoutRequest, ReplayPolicy, RespondSlo, Saml,
     ///     SamlValidationContext, SpDescriptor,
     /// };
     /// use std::time::SystemTime;
     ///
     /// # fn respond(
-    /// #     idp: &Saml<saml_rs::Idp>,
+    /// #     idp: &Saml<risaml::Idp>,
     /// #     sp: &SpDescriptor,
     /// #     fields: Vec<FormField>,
-    /// # ) -> Result<(), saml_rs::SamlError> {
+    /// # ) -> Result<(), risaml::SamlError> {
     /// let validation = SamlValidationContext::new(
     ///     SystemTime::now(),
     ///     ReplayPolicy::DisabledForCompatibility,
@@ -289,13 +289,13 @@ impl Saml<Idp> {
     /// # Examples
     ///
     /// ```no_run
-    /// use saml_rs::{LogoutRequest, Received, RespondSlo, Saml, SpDescriptor};
+    /// use risaml::{LogoutRequest, Received, RespondSlo, Saml, SpDescriptor};
     ///
     /// # fn respond(
-    /// #     idp: &Saml<saml_rs::Idp>,
+    /// #     idp: &Saml<risaml::Idp>,
     /// #     sp: &SpDescriptor,
     /// #     request: &Received<LogoutRequest>,
-    /// # ) -> Result<(), saml_rs::SamlError> {
+    /// # ) -> Result<(), risaml::SamlError> {
     /// let response = idp.respond_slo(sp, request, RespondSlo::post())?;
     /// let form = response.post_form()?;
     /// # let _ = form;
@@ -330,18 +330,18 @@ impl Saml<Idp> {
     /// # Examples
     ///
     /// ```no_run
-    /// use saml_rs::{
+    /// use risaml::{
     ///     BrowserInput, FormField, LogoutResponse, PendingLogoutRequest, ReplayPolicy,
     ///     Saml, SamlValidationContext, SpDescriptor,
     /// };
     /// use std::time::SystemTime;
     ///
     /// # fn finish(
-    /// #     idp: &Saml<saml_rs::Idp>,
+    /// #     idp: &Saml<risaml::Idp>,
     /// #     sp: &SpDescriptor,
     /// #     pending: &PendingLogoutRequest,
     /// #     fields: Vec<FormField>,
-    /// # ) -> Result<(), saml_rs::SamlError> {
+    /// # ) -> Result<(), risaml::SamlError> {
     /// let validation = SamlValidationContext::new(
     ///     SystemTime::now(),
     ///     ReplayPolicy::DisabledForCompatibility,

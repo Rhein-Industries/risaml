@@ -7,15 +7,15 @@
 
 #![allow(clippy::unwrap_used)]
 
-use saml_rs::binding::{base64_decode, base64_encode, deflate_raw_decode, deflate_raw_encode};
-use saml_rs::constants::{elements_order, signature_algorithm::RSA_SHA256, Binding, CertUse};
-use saml_rs::entity::{iso8601_offset, EntitySetting};
-use saml_rs::metadata::{
+use risaml::binding::{base64_decode, base64_encode, deflate_raw_decode, deflate_raw_encode};
+use risaml::constants::{elements_order, signature_algorithm::RSA_SHA256, Binding, CertUse};
+use risaml::entity::{iso8601_offset, EntitySetting};
+use risaml::metadata::{
     generate_sp_metadata, Endpoint, IdpMetadata, IdpMetadataConfig, SpMetadata, SpMetadataConfig,
 };
-use saml_rs::util::{normalize_cert_string, normalize_pem_string};
-use saml_rs::validator::verify_time;
-use saml_rs::IdentityProvider;
+use risaml::util::{normalize_cert_string, normalize_pem_string};
+use risaml::validator::verify_time;
+use risaml::IdentityProvider;
 
 const SP_CERT: &str = include_str!("fixtures/key/sp/cert.cer");
 const SP_ENCKEY: &str = include_str!("fixtures/key/sp/encryptKey.pem");
@@ -277,7 +277,7 @@ fn explicit_certificate_declaration_for_signing_and_encryption(
 
 #[test]
 fn building_attribute_statement_with_one_attribute() {
-    use saml_rs::template::{
+    use risaml::template::{
         attribute_statement_builder, LoginResponseAttribute, ATTRIBUTE_STATEMENT_TEMPLATE,
         ATTRIBUTE_TEMPLATE,
     };
@@ -298,7 +298,7 @@ fn building_attribute_statement_with_one_attribute() {
 
 #[test]
 fn building_attribute_statement_with_multiple_attributes() {
-    use saml_rs::template::{
+    use risaml::template::{
         attribute_statement_builder, LoginResponseAttribute, ATTRIBUTE_STATEMENT_TEMPLATE,
         ATTRIBUTE_TEMPLATE,
     };
@@ -325,17 +325,17 @@ fn building_attribute_statement_with_multiple_attributes() {
 ))]
 mod crypto {
     use super::*;
-    use saml_rs::constants::data_encryption_algorithm::AES_256;
-    use saml_rs::constants::key_encryption_algorithm::RSA_OAEP_MGF1P;
+    use risaml::constants::data_encryption_algorithm::AES_256;
+    use risaml::constants::key_encryption_algorithm::RSA_OAEP_MGF1P;
     #[cfg(feature = "crypto-rustcrypto")]
-    use saml_rs::constants::signature_algorithm::RSA_SHA1;
-    use saml_rs::constants::signature_algorithm::RSA_SHA512;
-    use saml_rs::crypto::keys::load_private_key;
-    use saml_rs::crypto::{
+    use risaml::constants::signature_algorithm::RSA_SHA1;
+    use risaml::constants::signature_algorithm::RSA_SHA512;
+    use risaml::crypto::keys::load_private_key;
+    use risaml::crypto::{
         construct_message_signature, construct_saml_signature, encrypt_assertion,
         verify_message_signature, verify_signature,
     };
-    use saml_rs::SamlError;
+    use risaml::SamlError;
 
     const SP_PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
     const SIGN_CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");

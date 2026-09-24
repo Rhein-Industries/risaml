@@ -5,14 +5,14 @@
 ))]
 
 use ribergshamra::{sign, DsigContext, KeysManager};
-use saml_rs::constants::signature_algorithm::RSA_SHA256;
-use saml_rs::constants::{digest_for_signature, namespace, transform_algorithm};
-use saml_rs::crypto::construct_saml_signature;
-use saml_rs::crypto::keys::load_private_key;
-use saml_rs::entity::{SignatureAction, SignatureConfig};
-use saml_rs::error::SignatureVerificationReason;
-use saml_rs::util::normalize_cert_string;
-use saml_rs::{
+use risaml::constants::signature_algorithm::RSA_SHA256;
+use risaml::constants::{digest_for_signature, namespace, transform_algorithm};
+use risaml::crypto::construct_saml_signature;
+use risaml::crypto::keys::load_private_key;
+use risaml::entity::{SignatureAction, SignatureConfig};
+use risaml::error::SignatureVerificationReason;
+use risaml::util::normalize_cert_string;
+use risaml::{
     CertificatePem, EntityId, IdpDescriptor, MetadataTrustPolicy, SamlError, SpDescriptor,
 };
 

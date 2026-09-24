@@ -105,7 +105,7 @@ impl PendingSnapshot<AuthnRequest> {
     /// # Examples
     ///
     /// ```
-    /// use saml_rs::{AuthnRequest, PendingSnapshot, RelayStateParam};
+    /// use risaml::{AuthnRequest, PendingSnapshot, RelayStateParam};
     ///
     /// let snapshot = PendingSnapshot::<AuthnRequest>::authn_request(
     ///     "_request123",
@@ -152,7 +152,7 @@ impl PendingSnapshot<LogoutRequest> {
     /// # Examples
     ///
     /// ```
-    /// use saml_rs::{LogoutBinding, LogoutRequest, PendingSnapshot, RelayStateParam};
+    /// use risaml::{LogoutBinding, LogoutRequest, PendingSnapshot, RelayStateParam};
     ///
     /// let snapshot = PendingSnapshot::<LogoutRequest>::logout_request(
     ///     "_logout123",
@@ -317,7 +317,7 @@ impl Pending<AuthnRequest> {
     /// # Examples
     ///
     /// ```
-    /// use saml_rs::{AuthnRequest, Pending, PendingSnapshot, RelayStateParam};
+    /// use risaml::{AuthnRequest, Pending, PendingSnapshot, RelayStateParam};
     ///
     /// let snapshot = PendingSnapshot::<AuthnRequest>::authn_request(
     ///     "_request123",
@@ -330,7 +330,7 @@ impl Pending<AuthnRequest> {
     /// let pending = Pending::<AuthnRequest>::from_snapshot(snapshot)?;
     ///
     /// assert_eq!(pending.idp_entity_id().as_str(), "https://idp.example.com/metadata");
-    /// # Ok::<(), saml_rs::SamlError>(())
+    /// # Ok::<(), risaml::SamlError>(())
     /// ```
     pub fn from_snapshot(snapshot: PendingSnapshot<AuthnRequest>) -> Result<Self, SamlError> {
         snapshot.relay_state.validate()?;
@@ -446,7 +446,7 @@ impl Pending<LogoutRequest> {
     /// # Examples
     ///
     /// ```
-    /// use saml_rs::{LogoutBinding, LogoutRequest, Pending, PendingSnapshot, RelayStateParam};
+    /// use risaml::{LogoutBinding, LogoutRequest, Pending, PendingSnapshot, RelayStateParam};
     ///
     /// let snapshot = PendingSnapshot::<LogoutRequest>::logout_request(
     ///     "_logout123",
@@ -457,7 +457,7 @@ impl Pending<LogoutRequest> {
     /// let pending = Pending::<LogoutRequest>::from_snapshot(snapshot)?;
     ///
     /// assert_eq!(pending.peer_entity_id().as_str(), "https://idp.example.com/metadata");
-    /// # Ok::<(), saml_rs::SamlError>(())
+    /// # Ok::<(), risaml::SamlError>(())
     /// ```
     pub fn from_snapshot(snapshot: PendingSnapshot<LogoutRequest>) -> Result<Self, SamlError> {
         snapshot.relay_state.validate()?;

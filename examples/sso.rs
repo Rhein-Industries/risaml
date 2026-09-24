@@ -1,7 +1,7 @@
 //! End-to-end typed SSO: SP starts an `AuthnRequest`, the IdP receives it and
 //! issues a signed `Response`, and the SP finishes with a typed session.
 //!
-//! Run with: `cargo run -p saml-rs --example sso`
+//! Run with: `cargo run -p risaml --example sso`
 //! (the `crypto-ribergshamra` feature is on by default).
 
 #[cfg(any(
@@ -10,7 +10,7 @@
     feature = "crypto-fips"
 ))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use saml_rs::{
+    use risaml::{
         AcsEndpoint, AuthnRequest, BrowserInput, CertificatePem, Credentials, EntityId, IdpConfig,
         IdpDescriptor, IdpValidationPolicy, MetadataTrustPolicy, NameId, PrivateKeyPem,
         RelayStateParam, ReplayPolicy, RespondSso, Saml, SamlValidationContext, SpConfig,

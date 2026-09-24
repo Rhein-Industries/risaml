@@ -1,9 +1,9 @@
-use saml_rs::constants::{
+use risaml::constants::{
     data_encryption_algorithm, digest_algorithm, key_encryption_algorithm, name_id_format,
     signature_algorithm, transform_algorithm,
 };
-use saml_rs::xml::XmlLimits;
-use saml_rs::{
+use risaml::xml::XmlLimits;
+use risaml::{
     AcsEndpoint, AssertionSignaturePolicy, AuthnRequestSigningPolicy, AuthnRequestValidationPolicy,
     CertificatePem, Credentials, DataEncryptionAlgorithm, DigestAlgorithm, EntityId, EntitySetting,
     IdpConfig, IdpDescriptor, IdpMetadataConfig, KeyEncryptionAlgorithm, MetadataTrustPolicy,

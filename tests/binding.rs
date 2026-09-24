@@ -1,10 +1,10 @@
-use saml_rs::binding::{
+use risaml::binding::{
     deflate_raw_decode, deflate_raw_encode, saml_post_binding_form, try_saml_post_binding_form,
     xml_escape,
 };
-use saml_rs::constants::Binding;
-use saml_rs::entity::BindingContext;
-use saml_rs::SamlError;
+use risaml::constants::Binding;
+use risaml::entity::BindingContext;
+use risaml::SamlError;
 
 fn form_action(form: &str) -> Result<&str, Box<dyn std::error::Error>> {
     let (_, rest) = form

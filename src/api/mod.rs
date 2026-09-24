@@ -1,16 +1,16 @@
-//! Typed high-level API contract for `saml-rs`.
+//! Typed high-level API contract for `risaml`.
 //!
 //! Artifact binding is not part of the high-level browser SSO request binding
 //! contract.
 //!
 //! ```compile_fail
-//! use saml_rs::SsoRequestBinding;
+//! use risaml::SsoRequestBinding;
 //!
 //! let binding = SsoRequestBinding::Artifact;
 //! ```
 //!
 //! ```compile_fail
-//! use saml_rs::{AuthnRequest, Received, RespondSso, Saml, Sp, SpDescriptor, Subject};
+//! use risaml::{AuthnRequest, Received, RespondSso, Saml, Sp, SpDescriptor, Subject};
 //!
 //! let sp: Saml<Sp> = unreachable!();
 //! let peer: SpDescriptor = unreachable!();
@@ -21,7 +21,7 @@
 //! ```
 //!
 //! ```compile_fail
-//! use saml_rs::{Idp, IdpDescriptor, Saml, StartSso};
+//! use risaml::{Idp, IdpDescriptor, Saml, StartSso};
 //!
 //! let idp: Saml<Idp> = unreachable!();
 //! let peer: IdpDescriptor = unreachable!();

@@ -1,36 +1,80 @@
 # Changelog
 
-All notable changes to `saml-rs` are documented in this file.
+risaml is Rhein Industries' maintained fork of
+[saml-rs](https://github.com/salasebas/opensaml-rs) by Sebastian Sala. Entries
+from 0.6.0 on describe risaml. The history of saml-rs up to 0.5.0, the release
+risaml was forked from, is kept unchanged below.
 
 The format is based on Keep a Changelog, and this project follows Semantic
 Versioning while the API is still pre-1.0.
 
-Entries before the rebrand use the package names that were current at the time.
-
 ## Unreleased
 
-## [0.5.0](https://github.com/salasebas/opensaml-rs/compare/v0.4.0...v0.5.0) - 2026-08-13
+## 0.6.0 — first risaml release
 
-### Added
+Not yet published to crates.io. Changes relative to saml-rs 0.5.0 (upstream
+tag `v0.5.0`, commit `9302371`):
+
+### Changed
+
+- **Breaking:** the crate is renamed `risaml` (`use risaml::...`,
+  `cargo run -p risaml`). Existing code can keep its `saml_rs::` paths with
+  `saml-rs = { package = "risaml", version = "0.6" }`. Public types, modules
+  and SAML protocol constants (URNs, namespaces, bindings, NameID formats,
+  status codes) are unchanged.
+- **Breaking:** XML security moves from bergshamra 0.8 (on kryptering 0.5) to
+  [ribergshamra](https://github.com/Rhein-Industries/ribergshamra) 0.10 (on
+  [riptering](https://github.com/Rhein-Industries/riptering) 0.6 and
+  [ritsp-ltv](https://github.com/Rhein-Industries/ritsp-ltv) 0.5), so `Key`,
+  `KeysManager` and the other XML security types in risaml's API come from
+  ribergshamra. ribergshamra is forked from bergshamra 0.9.1 and parses XML
+  with uppsala 0.10; risaml's own XML handling still uses quick-xml.
+- The default feature is renamed `crypto-ribergshamra`; `crypto-bergshamra`
+  stays as a compatibility alias for it. The provider and capability features
+  (`crypto-rustcrypto`, `crypto-aws-lc`, `crypto-fips`,
+  `crypto-legacy-algorithms`, `crypto-post-quantum`, `crypto-pkcs11`) keep
+  their names and map to ribergshamra's `rustcrypto`, `aws-lc`, `fips`,
+  `legacy-algorithms`, `post-quantum` and `pkcs11`.
+- With `crypto-rustcrypto` but without `crypto-legacy-algorithms`, riptering
+  rejects RSA keys shorter than 2048 bits (AWS-LC and FIPS already did). The
+  default features are unaffected.
+- The compatibility re-export crates `opensaml`, `samlify`, `rustsaml` and
+  `samlet` are not part of the fork.
+- Package metadata points at <https://github.com/Rhein-Industries/risaml>;
+  LICENSE keeps saml-rs's copyright line and adds Rhein Industries' line. The
+  README opens with a fork notice; SECURITY.md and CONTRIBUTING.md describe
+  Rhein Industries' reporting and contribution process.
+- CI runs on GitHub-hosted runners without repository secrets. The release-plz
+  workflow is removed and publishing is manual (see RELEASE.md). The
+  cargo-semver-checks job is paused until risaml has a crates.io baseline.
+
+## saml-rs history (upstream, up to 0.5.0)
+
+Entries below are saml-rs's own changelog; they use the package names that
+were current at the time.
+
+### [0.5.0](https://github.com/salasebas/opensaml-rs/compare/v0.4.0...v0.5.0) - 2026-08-13
+
+#### Added
 
 - *(crypto)* expose selectable Bergshamra providers ([#110](https://github.com/salasebas/opensaml-rs/pull/110))
 
-### Other
+#### Other
 
 - *(crypto)* [**breaking**] upgrade Bergshamra to 0.8 and MSRV to Rust 1.88 ([#108](https://github.com/salasebas/opensaml-rs/pull/108))
 
-### Fixed
+#### Fixed
 
 - *(crypto)* apply the software RSA key-transport opt-in only to RustCrypto so
   AWS-LC decrypts RSA-OAEP with default options
 
-## [0.4.0](https://github.com/salasebas/opensaml-rs/compare/v0.3.0...v0.4.0) - 2026-08-11
+### [0.4.0](https://github.com/salasebas/opensaml-rs/compare/v0.3.0...v0.4.0) - 2026-08-11
 
-### Added
+#### Added
 
 - *(api)* [**breaking**] enforce standards-aware Response signature policy ([#81](https://github.com/salasebas/opensaml-rs/pull/81))
 
-### Fixed
+#### Fixed
 
 - *(slo)* [**breaking**] emit session authority logout expiration ([#101](https://github.com/salasebas/opensaml-rs/pull/101))
 - *(slo)* [**breaking**] validate LogoutRequest time bounds ([#73](https://github.com/salasebas/opensaml-rs/pull/73))
@@ -39,36 +83,36 @@ Entries before the rebrand use the package names that were current at the time.
 - *(slo)* [**breaking**] validate logout response issue instant ([#80](https://github.com/salasebas/opensaml-rs/pull/80))
 - *(protocol)* [**breaking**] validate AuthnRequest IssueInstant ([#74](https://github.com/salasebas/opensaml-rs/pull/74))
 
-### Other
+#### Other
 
 - *(deps)* bump the cargo-maintenance group across 1 directory with 4 updates ([#104](https://github.com/salasebas/opensaml-rs/pull/104))
 - *(slo)* add external HTTP-Redirect interoperability fixtures ([#99](https://github.com/salasebas/opensaml-rs/pull/99))
 - *(migrations)* start 0.3 to 0.4 guide ([#84](https://github.com/salasebas/opensaml-rs/pull/84))
 - *(deps)* bump uuid in the cargo-maintenance group ([#93](https://github.com/salasebas/opensaml-rs/pull/93))
 
-### Fixed
+#### Fixed
 
 - *(slo)* [**breaking**] require UTC LogoutRequest `IssueInstant`, validate
   optional `NotOnOrAfter`, and derive replay expiry from its skew-adjusted
   deadline
 
-## [0.3.0](https://github.com/salasebas/opensaml-rs/compare/v0.2.1...v0.3.0) - 2026-07-16
+### [0.3.0](https://github.com/salasebas/opensaml-rs/compare/v0.2.1...v0.3.0) - 2026-07-16
 
-### Fixed
+#### Fixed
 
 - *(api)* [**breaking**] avoid exposing time crate types ([#72](https://github.com/salasebas/opensaml-rs/pull/72))
 
-### Other
+#### Other
 
 - *(migrations)* add 0.2 to 0.3 guide ([#83](https://github.com/salasebas/opensaml-rs/pull/83))
 
-## [0.2.1](https://github.com/salasebas/opensaml-rs/compare/v0.2.0...v0.2.1) - 2026-07-16
+### [0.2.1](https://github.com/salasebas/opensaml-rs/compare/v0.2.0...v0.2.1) - 2026-07-16
 
-### Added
+#### Added
 
 - *(compat)* restore maintained crate aliases
 
-### Fixed
+#### Fixed
 
 - enforce SAML 2.0 namespace and version profile ([#79](https://github.com/salasebas/opensaml-rs/pull/79))
 - honor repeated AuthnStatement session bounds ([#71](https://github.com/salasebas/opensaml-rs/pull/71))
@@ -77,32 +121,32 @@ Entries before the rebrand use the package names that were current at the time.
 - *(security)* enforce SP assertion signature policy ([#70](https://github.com/salasebas/opensaml-rs/pull/70))
 - *(xml)* reject multiple document elements ([#68](https://github.com/salasebas/opensaml-rs/pull/68))
 
-### Other
+#### Other
 
 - add migration guide structure
 
-### Added
+#### Added
 
 - *(api)* expose every `AuthnStatement` session tuple in XML order
 - *(api)* add `RespondSso::sign_response()` for explicit top-level HTTP-POST Response signing
 - *(api)* add an explicit compatibility opt-out for unsigned CBC-encrypted Responses
 
-### Changed
+#### Changed
 
 - *(api)* rename the SP message-signature policy and field to `ResponseSignaturePolicy`/`responses`
 - *(sp)* require Response authentication for CBC-encrypted Assertions in strict typed flows
 - *(idp)* sign CBC-encrypted Responses by default in typed flows
 
-### Fixed
+#### Fixed
 
 - *(sp)* honor the earliest `SessionNotOnOrAfter` across repeated `AuthnStatement` values
 - *(security)* enforce explicit required Response signatures against verified root coverage
 - *(bindings)* reject authenticated Responses whose required `Destination` is missing
 - *(docs)* apply Approved Errata 05 E26/E93 to Web SSO signature guidance
 
-## [0.2.0](https://github.com/salasebas/opensaml-rs/compare/v0.1.4...v0.2.0) - 2026-07-14
+### [0.2.0](https://github.com/salasebas/opensaml-rs/compare/v0.1.4...v0.2.0) - 2026-07-14
 
-### Added
+#### Added
 
 - *(api)* add typed Single Logout facade ([#59](https://github.com/salasebas/opensaml-rs/pull/59))
 - *(api)* add typed Web SSO facade ([#58](https://github.com/salasebas/opensaml-rs/pull/58))
@@ -118,7 +162,7 @@ Entries before the rebrand use the package names that were current at the time.
 - *(opensaml)* align IdP metadata ordering behavior
 - *(opensaml)* support rsa pss sha256 signatures
 
-### Fixed
+#### Fixed
 
 - *(crypto)* preflight SAML reference URIs ([#65](https://github.com/salasebas/opensaml-rs/pull/65))
 - *(sp)* fail on missing response ACS metadata
@@ -149,7 +193,7 @@ Entries before the rebrand use the package names that were current at the time.
 - *(opensaml)* require metadata signature root coverage
 - *(security)* bind extracted SAML content to verified reference
 
-### Other
+#### Other
 
 - *(deps)* bump bergshamra in the cargo-xml-crypto group ([#63](https://github.com/salasebas/opensaml-rs/pull/63))
 - split large modules
@@ -179,7 +223,7 @@ Entries before the rebrand use the package names that were current at the time.
 - add path-based PR labels
 - add release-plz workflow
 
-### Changed
+#### Changed
 
 - Renamed the primary package from `opensaml` to `saml-rs`; Rust imports now use
   `saml_rs`.
@@ -195,9 +239,9 @@ Entries before the rebrand use the package names that were current at the time.
   and unsafe metadata reference transforms such as XPath/XSLT fail closed before
   descriptor coverage is accepted.
 
-## [0.1.4] - 2026-06-21
+### [0.1.4] - 2026-06-21
 
-### Changed
+#### Changed
 
 - Updated `quick-xml` from 0.37.5 to 0.40.1, `time` from 0.3.47 to
   0.3.49, and `uuid` from 1.23.2 to 1.23.3.
@@ -205,42 +249,42 @@ Entries before the rebrand use the package names that were current at the time.
   disabled checkout credential persistence.
 - Added Dependabot cooldown windows for Cargo and GitHub Actions updates.
 
-### Fixed
+#### Fixed
 
 - Adapted the internal XML DOM parser to `quick-xml` 0.40 text/reference
   events so predefined and numeric XML entities in element text are preserved.
 - Removed the auto-label workflow that used `pull_request_target`, clearing the
   remaining high-severity `zizmor` trigger finding.
 
-## [0.1.3] - 2026-06-20
+### [0.1.3] - 2026-06-20
 
-### Changed
+#### Changed
 
 - Updated `bergshamra` from 0.4.0 to 0.5.1.
 - Re-audited the XML security trust-model comment against `bergshamra` 0.5.1
   secure `DsigContext::new()` defaults.
 - XSW coverage includes duplicate SAML assertion IDs.
 
-### Fixed
+#### Fixed
 
 - Reject duplicate SAML `ID`/`AssertionID` values before trusting an XML-DSig
   verification result.
 
-## [0.1.2] - 2026-06-14
+### [0.1.2] - 2026-06-14
 
-### Changed
+#### Changed
 
 - Alias crate READMEs and crate descriptions simplified.
 - Workspace version bump to 0.1.2 (packaging-only for alias crates).
 
-## [0.1.1] - 2026-06-02
+### [0.1.1] - 2026-06-02
 
-### Added
+#### Added
 
 - `create_logout_request_with_id` / `create_logout_response_with_id` — optional
   caller-provided `LogoutRequest` / `LogoutResponse` IDs.
 
-### Changed
+#### Changed
 
 - Root `README.md` rewrite: Rust-only positioning, opensaml vs samael
   comparison, and sectioned quick-start examples; `opensaml` on crates.io now
@@ -248,13 +292,13 @@ Entries before the rebrand use the package names that were current at the time.
 - The published crate ships its `tests/` and `examples/` (packaging only; the
   consumed library is unchanged).
 
-### Fixed
+#### Fixed
 
 - XML-escape `Location` attribute values in generated SP/IdP metadata.
 
-## [0.1.0] - 2026-06-01
+### [0.1.0] - 2026-06-01
 
-### Added
+#### Added
 
 - SAML 2.0 protocol layer to parity with npm `samlify` v2.10.2:
   - Constants (URNs, bindings, status codes, algorithms, NameID formats).
@@ -300,7 +344,7 @@ Entries before the rebrand use the package names that were current at the time.
   (`#id` or whole-document); external/remote/file references are rejected
   (`ERR_EXTERNAL_REFERENCE`).
 
-### Changed
+#### Changed
 
 - `crypto-bergshamra` is now enabled by default; disable with
   `default-features = false` for the crypto-free protocol layer (operations
@@ -313,7 +357,7 @@ Entries before the rebrand use the package names that were current at the time.
   encrypt-then-sign); signing the message then encrypting a sub-element would
   invalidate the outer signature.
 
-### Fixed
+#### Fixed
 
 - Decryption strips a leading XML declaration from the recovered assertion so
   it can be re-parsed in place during the inbound flow.

@@ -6,15 +6,15 @@
 ))]
 #![allow(clippy::unwrap_used)]
 
-use saml_rs::constants::signature_algorithm::RSA_SHA256;
-use saml_rs::constants::Binding;
-use saml_rs::entity::{iso8601_offset, EntitySetting, User};
-use saml_rs::error::SubjectConfirmationReason;
-use saml_rs::flow::HttpRequest;
-use saml_rs::idp::LoginResponseOptions;
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::template::replace_tags_by_value;
-use saml_rs::{IdentityProvider, SamlError, ServiceProvider};
+use risaml::constants::signature_algorithm::RSA_SHA256;
+use risaml::constants::Binding;
+use risaml::entity::{iso8601_offset, EntitySetting, User};
+use risaml::error::SubjectConfirmationReason;
+use risaml::flow::HttpRequest;
+use risaml::idp::LoginResponseOptions;
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::template::replace_tags_by_value;
+use risaml::{IdentityProvider, SamlError, ServiceProvider};
 
 const PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
 const CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");
@@ -219,7 +219,7 @@ fn response_for_subject_confirmation(
 }
 
 fn assert_subject_confirmation_reason(
-    result: Result<saml_rs::flow::FlowResult, SamlError>,
+    result: Result<risaml::flow::FlowResult, SamlError>,
     expected: SubjectConfirmationReason,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match result {
@@ -635,10 +635,10 @@ fn hardening_sign_then_encrypt_message_auto_resolves() -> Result<(), Box<dyn std
 #[test]
 fn hardening_signed_metadata_verifies_against_trust_anchor(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use saml_rs::crypto::keys::load_private_key;
-    use saml_rs::crypto::{construct_saml_signature, verify_metadata_signature};
-    use saml_rs::entity::{SignatureAction, SignatureConfig};
-    use saml_rs::metadata::IdpMetadata;
+    use risaml::crypto::keys::load_private_key;
+    use risaml::crypto::{construct_saml_signature, verify_metadata_signature};
+    use risaml::entity::{SignatureAction, SignatureConfig};
+    use risaml::metadata::IdpMetadata;
 
     let md = "<EntityDescriptor ID=\"_md1\" entityID=\"https://idp.example.com/metadata\" xmlns=\"urn:oasis:names:tc:SAML:2.0:metadata\" xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\"><IDPSSODescriptor protocolSupportEnumeration=\"urn:oasis:names:tc:SAML:2.0:protocol\"><SingleSignOnService Binding=\"urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST\" Location=\"https://idp/sso\"/></IDPSSODescriptor></EntityDescriptor>";
     let key = load_private_key(PRIVKEY, None)?;
@@ -666,11 +666,11 @@ fn hardening_signed_metadata_verifies_against_trust_anchor(
 #[test]
 fn hardening_metadata_signature_requires_root_coverage() -> Result<(), Box<dyn std::error::Error>> {
     use ribergshamra::{sign, DsigContext, KeysManager};
-    use saml_rs::constants::{digest_for_signature, namespace, transform_algorithm};
-    use saml_rs::crypto::keys::load_private_key;
-    use saml_rs::crypto::verify_metadata_signature;
-    use saml_rs::metadata::IdpMetadata;
-    use saml_rs::util::normalize_cert_string;
+    use risaml::constants::{digest_for_signature, namespace, transform_algorithm};
+    use risaml::crypto::keys::load_private_key;
+    use risaml::crypto::verify_metadata_signature;
+    use risaml::metadata::IdpMetadata;
+    use risaml::util::normalize_cert_string;
 
     let digest = digest_for_signature(RSA_SHA256).ok_or("unknown digest")?;
     let signature = format!(

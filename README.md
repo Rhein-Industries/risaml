@@ -1,9 +1,21 @@
-# saml-rs
+# risaml
 
-[![crates.io](https://img.shields.io/crates/v/saml-rs.svg)](https://crates.io/crates/saml-rs)
-[![docs.rs](https://img.shields.io/docsrs/saml-rs)](https://docs.rs/saml-rs)
-[![MIT licensed](https://img.shields.io/crates/l/saml-rs)](https://github.com/salasebas/saml-rs/blob/main/LICENSE)
+[![crates.io](https://img.shields.io/crates/v/risaml.svg)](https://crates.io/crates/risaml)
+[![docs.rs](https://img.shields.io/docsrs/risaml)](https://docs.rs/risaml)
+[![MIT licensed](https://img.shields.io/crates/l/risaml)](https://github.com/Rhein-Industries/risaml/blob/main/LICENSE)
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success)](#security)
+
+> **Fork notice.** risaml is Rhein Industries' actively maintained fork of
+> [saml-rs](https://github.com/salasebas/opensaml-rs) by Sebastian Sala. It
+> starts from saml-rs 0.5.0 (upstream tag `v0.5.0`, commit `9302371`) and
+> keeps saml-rs's MIT license and copyright notice. risaml is **not affiliated
+> with or endorsed by** the upstream author: please report problems with
+> risaml to Rhein Industries, not to the saml-rs project.
+>
+> - Bugs and feature requests:
+>   <https://github.com/Rhein-Industries/risaml/issues>
+> - Security problems: report them privately as described in
+>   [SECURITY.md](SECURITY.md); do not open a public issue.
 
 **Pure-Rust SAML 2.0** Service Provider and Identity Provider support. The
 protocol layer uses Rust XML parsing and does not require `libxml2`, `xmlsec1`,
@@ -17,27 +29,65 @@ historical optional algorithm and PKCS#11 capabilities.
 
 ```toml
 [dependencies]
-saml-rs = "0.1"
+risaml = "0.6"
 
 # Crypto-free protocol layer only:
-# saml-rs = { version = "0.1", default-features = false }
+# risaml = { version = "0.6", default-features = false }
 ```
 
-The project now publishes one crate: `saml-rs`. The Rust import path is
-`saml_rs`.
+The Rust import path is `risaml`.
+
+## How risaml differs from saml-rs 0.5.0
+
+- **Names.** The crate is `risaml` (`use risaml::...`, `cargo run -p risaml`).
+  The upstream compatibility re-export crates (`opensaml`, `samlify`,
+  `rustsaml`, `samlet`) are not part of the fork. Public types, modules and
+  all SAML protocol constants (URNs, namespaces, bindings, NameID formats,
+  status codes) are unchanged.
+- **XML security.** [ribergshamra](https://github.com/Rhein-Industries/ribergshamra)
+  0.10 replaces bergshamra 0.8 and
+  [riptering](https://github.com/Rhein-Industries/riptering) 0.6 replaces
+  kryptering 0.5, so `Key`, `KeysManager` and the other re-exported XML
+  security types come from ribergshamra. The default feature is now called
+  `crypto-ribergshamra`; `crypto-bergshamra` remains as an alias for it, and
+  the provider and capability features keep their names.
+- **RSA key size.** With the default features nothing changes. With
+  `crypto-rustcrypto` but without `crypto-legacy-algorithms`, riptering now
+  rejects RSA keys shorter than 2048 bits, as AWS-LC and FIPS already did.
+- **Project.** Package metadata points at
+  <https://github.com/Rhein-Industries/risaml>; CI runs on GitHub-hosted
+  runners and publishing is manual (the upstream release-plz automation is
+  not used).
+
+The full list is in the [changelog](CHANGELOG.md).
+
+### Migrating from saml-rs
+
+```toml
+[dependencies]
+risaml = "0.6"
+# or keep the `saml_rs::` paths in your code:
+# saml-rs = { package = "risaml", version = "0.6" }
+```
+
+With the plain `risaml` dependency, replace `saml_rs::` with `risaml::`.
+Replace `crypto-bergshamra` with `crypto-ribergshamra` in feature lists (the
+old name keeps working). Code that names bergshamra types next to risaml's
+API, for example the `Key` returned by `load_private_key`, switches to
+`ribergshamra::`. See the [0.5 to 0.6 migration guide](docs/migrations/0.5-to-0.6.md).
 
 ## Upgrading
 
-`saml-rs` is currently pre-1.0, so minor releases may contain breaking API or
+`risaml` is currently pre-1.0, so minor releases may contain breaking API or
 behavior changes. Before updating across minor versions, review the
 [migration guides](docs/migrations/README.md).
 
-## Why saml-rs?
+## Why risaml?
 
-`saml-rs` is aimed at applications that need SAML SP/IdP flows without a C XML
+`risaml` is aimed at applications that need SAML SP/IdP flows without a C XML
 security stack in their build and deployment environment.
 
-| Area | saml-rs |
+| Area | risaml |
 |------|---------|
 | Native dependencies | No `libxml2`, `xmlsec1`, or OpenSSL build chain for the protocol layer |
 | Roles | Service Provider and Identity Provider |
@@ -50,7 +100,7 @@ security stack in their build and deployment environment.
 
 Compared with [`samael`](https://crates.io/crates/samael), the main tradeoff is
 deployment shape: `samael` is the established Rust SAML crate and commonly uses
-the native `xmlsec` stack, while `saml-rs` keeps the SAML protocol path
+the native `xmlsec` stack, while `risaml` keeps the SAML protocol path
 Rust-only and delegates XML crypto to a Rust crate.
 
 ## What you can do
@@ -86,7 +136,7 @@ session while the SAML round trip is in flight.
 A signed SP -> IdP -> SP round trip is available as an executable example:
 
 ```sh
-cargo run -p saml-rs --example sso
+cargo run -p risaml --example sso
 ```
 
 Source: [`examples/sso.rs`](examples/sso.rs).
@@ -95,12 +145,12 @@ The repository also includes a typed Single Logout walkthrough in
 [`examples/slo.rs`](examples/slo.rs) and a low-level compatibility walkthrough
 in [`examples/raw_compat.rs`](examples/raw_compat.rs).
 
-The [crate-root docs](https://docs.rs/saml-rs/latest/saml_rs/) contain
+The [crate-root docs](https://docs.rs/risaml/latest/risaml/) contain
 doctested fragments for the typed `Saml` facade, including
-[`Saml<Sp>::start_sso`](https://docs.rs/saml-rs/latest/saml_rs/struct.Saml.html#method.start_sso),
-[`Saml<Sp>::finish_sso`](https://docs.rs/saml-rs/latest/saml_rs/struct.Saml.html#method.finish_sso),
-[`Saml<Idp>::receive_sso`](https://docs.rs/saml-rs/latest/saml_rs/struct.Saml.html#method.receive_sso),
-and [`Saml<Sp>::finish_slo`](https://docs.rs/saml-rs/latest/saml_rs/struct.Saml.html#method.finish_slo).
+[`Saml<Sp>::start_sso`](https://docs.rs/risaml/latest/risaml/struct.Saml.html#method.start_sso),
+[`Saml<Sp>::finish_sso`](https://docs.rs/risaml/latest/risaml/struct.Saml.html#method.finish_sso),
+[`Saml<Idp>::receive_sso`](https://docs.rs/risaml/latest/risaml/struct.Saml.html#method.receive_sso),
+and [`Saml<Sp>::finish_slo`](https://docs.rs/risaml/latest/risaml/struct.Saml.html#method.finish_slo).
 Those rustdoc snippets are compiled by `cargo test --doc`; the README stays as
 an entry point and links to the complete examples above.
 
@@ -115,7 +165,7 @@ an entry point and links to the complete examples above.
 
 See [`examples/sso.rs`](examples/sso.rs) for a complete signed SP -> IdP -> SP
 round trip and the [doctested crate-root SSO
-fragment](https://docs.rs/saml-rs/latest/saml_rs/#sp-initiated-sso) for the
+fragment](https://docs.rs/risaml/latest/risaml/#sp-initiated-sso) for the
 compact API shape.
 
 ### Identity Provider - receive and respond
@@ -124,14 +174,14 @@ The IdP side mirrors the SP flow: import peer SP metadata into `SpDescriptor`,
 parse an `AuthnRequest` with `idp.receive_sso(...)`, then produce a typed
 browser response with `idp.respond_sso(...)`. The complete path is exercised in
 [`examples/sso.rs`](examples/sso.rs), and the short rustdoc version is in the
-[Identity Provider flows](https://docs.rs/saml-rs/latest/saml_rs/#identity-provider-flows)
+[Identity Provider flows](https://docs.rs/risaml/latest/risaml/#identity-provider-flows)
 crate-root section.
 
 `IdpConfig::builder(...).issuance_lifetime(Duration)` controls the shared
 issuance window for typed IdP output. One captured UTC `IssueInstant` derives both
 SSO `Conditions@NotOnOrAfter` and bearer
 `SubjectConfirmationData@NotOnOrAfter`. The default is exactly five minutes;
-that duration is saml-rs policy, not an OASIS requirement.
+that duration is risaml policy, not an OASIS requirement.
 
 ### Single Logout
 
@@ -140,7 +190,7 @@ Typed Single Logout starts from `session.logout_subject()`, stores the
 Peer-initiated logout uses `Received<LogoutRequest>` rather than free-form
 request ID strings. See [`examples/slo.rs`](examples/slo.rs) for the complete
 typed walkthrough and the [doctested SLO
-fragment](https://docs.rs/saml-rs/latest/saml_rs/#single-logout) for the compact
+fragment](https://docs.rs/risaml/latest/risaml/#single-logout) for the compact
 shape.
 
 `Saml<Idp>::start_slo` models the local IdP as the SAML Session Authority and
@@ -151,11 +201,11 @@ templates must place `NotOnOrAfter="{NotOnOrAfter}"` as one unqualified root
 attribute so the library can validate and sign the final value. Typed
 `Saml<Sp>::start_slo` does not synthesize this role-specific attribute.
 
-Inbound `LogoutRequest` messages require a UTC `IssueInstant`; saml-rs does not
+Inbound `LogoutRequest` messages require a UTC `IssueInstant`; risaml does not
 invent a maximum age for it. Generic inbound `NotOnOrAfter` remains optional
 under the protocol schema and is not rejected merely because a
 Session-Authority producer rule would require it on a narrower outbound flow.
-When present it must be UTC, and saml-rs rejects the request at its effective exclusive
+When present it must be UTC, and risaml rejects the request at its effective exclusive
 deadline. That fail-closed rejection is a library policy permitted by SAML,
 not an OASIS receiver `MUST`. `ClockSkew` controls the `NotOnOrAfter` tolerance,
 and replay storage uses the same skew-adjusted deadline instead of generic
@@ -164,7 +214,7 @@ retention when the attribute is present.
 ### Metadata
 
 Metadata trust is explicit. The rustdoc
-[Metadata trust](https://docs.rs/saml-rs/latest/saml_rs/#metadata-trust)
+[Metadata trust](https://docs.rs/risaml/latest/risaml/#metadata-trust)
 section describes production-shaped signed metadata validation with pinned
 certificates. `MetadataTrustPolicy::UnsignedForCompatibility` is available for
 legacy interoperability, but it is a compatibility exception rather than a
@@ -174,11 +224,11 @@ The compact rustdoc flow snippets use
 `ReplayPolicy::DisabledForCompatibility` only to keep examples dependency-free.
 Production inbound validation should use `ReplayPolicy::RequireCache` with a
 caller-owned replay cache and the retention guidance in
-[`SamlValidationContext`](https://docs.rs/saml-rs/latest/saml_rs/struct.SamlValidationContext.html).
+[`SamlValidationContext`](https://docs.rs/risaml/latest/risaml/struct.SamlValidationContext.html).
 
 ### Advanced/raw compatibility
 
-The low-level compatibility API remains available under `saml_rs::raw` for
+The low-level compatibility API remains available under `risaml::raw` for
 callers that need direct access to `ServiceProvider`, `IdentityProvider`,
 `HttpRequest`, `BindingContext`, or protocol helper functions. New browser
 SSO/SLO integrations should start with `Saml`, typed descriptors, and the
@@ -186,7 +236,7 @@ builder-backed config types shown above.
 Public raw `create_logout_request*` helpers retain their compatibility output:
 they do not synthesize `NotOnOrAfter`, and the public
 `LOGOUT_REQUEST_TEMPLATE` remains unchanged.
-Use visible docs.rs modules, crate-root re-exports, and `saml_rs::raw` before
+Use visible docs.rs modules, crate-root re-exports, and `risaml::raw` before
 reaching for hidden lower-level module paths.
 
 ## Features
@@ -218,28 +268,29 @@ With `default-features = false`, the protocol layer still builds messages,
 parses metadata, and runs extraction. Operations that need signing,
 verification, or encryption return `SamlError::Unsupported`.
 
-All published workspace packages require Rust 1.88. Select at most one of
-`crypto-rustcrypto`, `crypto-aws-lc`, and `crypto-fips`; provider combinations
-are rejected at compile time. Disable default features before selecting AWS-LC
-or FIPS. The compatibility packages forward the same feature names.
+risaml requires Rust 1.88. Select at most one of `crypto-rustcrypto`,
+`crypto-aws-lc`, and `crypto-fips`; provider combinations are rejected at
+compile time. Disable default features before selecting AWS-LC or FIPS.
 
 `crypto-legacy-algorithms`, `crypto-post-quantum`, and `crypto-pkcs11` forward
 those ribergshamra capabilities without selecting a provider. The default
 `crypto-ribergshamra` feature enables them with RustCrypto to preserve existing
 behavior; direct provider selection starts with only that provider's baseline.
+Without `crypto-legacy-algorithms`, and always with AWS-LC or FIPS, riptering
+rejects RSA keys shorter than 2048 bits.
 
-ribergshamra supports AWS-LC and FIPS on Linux x86_64/aarch64. The `saml-rs`
+ribergshamra supports AWS-LC and FIPS on Linux x86_64/aarch64. The `risaml`
 provider matrix currently validates Linux x86_64; Linux aarch64 is an upstream
-capability that this repository does not exercise in CI. `saml-rs` initializes
+capability that this repository does not exercise in CI. `risaml` initializes
 ribergshamra before its first crypto operation. Applications can fail early and
 inspect the result during startup:
 
 ```rust
-use saml_rs::{initialize_crypto_provider, CryptoFipsStatus};
+use risaml::{initialize_crypto_provider, CryptoFipsStatus};
 
 let provider = initialize_crypto_provider()?;
 assert_ne!(provider.fips_status(), CryptoFipsStatus::Uninitialized);
-# Ok::<(), saml_rs::SamlError>(())
+# Ok::<(), risaml::SamlError>(())
 ```
 
 Initialization, attestation, unsupported-algorithm, and key-import failures are
@@ -262,12 +313,12 @@ With `crypto-ribergshamra` enabled:
 - XML-Enc support is available. On the default RustCrypto provider, software
   RSA key-transport decryption is gated off by default and requires an
   explicit compatibility opt-in through
-  [`XmlEncryptionPolicy`](https://docs.rs/saml-rs/latest/saml_rs/struct.XmlEncryptionPolicy.html).
+  [`XmlEncryptionPolicy`](https://docs.rs/risaml/latest/risaml/struct.XmlEncryptionPolicy.html).
   AWS-LC decrypts RSA-OAEP with the default options.
 
 ## Security
 
-`saml-rs` is pre-1.0 and has not had an external security audit. Review the
+`risaml` is pre-1.0 and has not had an external security audit. Review the
 crate, configuration, and peer metadata trust model before production use.
 
 Security-sensitive defaults and checks include:
@@ -295,16 +346,17 @@ Schema validation is optional defense in depth via
 
 ```sh
 cargo fmt --all --check
-cargo clippy -p saml-rs --all-targets -- -D warnings
-cargo nextest run -p saml-rs
-cargo test -p saml-rs --doc
-RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p saml-rs --lib --no-deps
-cargo test -p saml-rs --doc --no-default-features
-cargo check -p saml-rs --no-default-features
-cargo nextest run -p saml-rs --no-default-features --features crypto-rustcrypto
+cargo clippy -p risaml --all-targets -- -D warnings
+cargo nextest run -p risaml
+cargo test -p risaml --doc
+RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p risaml --lib --no-deps
+cargo test -p risaml --doc --no-default-features
+cargo check -p risaml --no-default-features
+cargo nextest run -p risaml --no-default-features --features crypto-rustcrypto
 # AWS-LC/FIPS checks run on supported Linux runners; see .github/workflows/ci.yml.
 ```
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSE). risaml keeps saml-rs's copyright notice and adds Rhein
+Industries' line for the fork's modifications.

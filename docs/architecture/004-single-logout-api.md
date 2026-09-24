@@ -121,9 +121,9 @@ replay-sensitive logout request validation.
 Inbound LogoutRequest profile checks require an unqualified UTC
 `IssueInstant`. They deliberately do not infer a maximum age from it.
 `NotOnOrAfter` is optional, but when present it must be unqualified UTC and
-saml-rs rejects the request at or after the deadline plus configured
+risaml rejects the request at or after the deadline plus configured
 `NotOnOrAfter` skew. OASIS permits a recipient to discard after that instant;
-the rejection is saml-rs' default fail-closed policy rather than a receiver
+the rejection is risaml's default fail-closed policy rather than a receiver
 `MUST`. Replay storage derives its expiry from the same effective deadline.
 Without `NotOnOrAfter`, required replay storage retains the existing explicit
 `replay_retention` fallback.

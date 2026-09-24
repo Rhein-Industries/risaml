@@ -4,7 +4,7 @@
     feature = "crypto-fips"
 ))]
 
-use saml_rs::{
+use risaml::{
     AcsEndpoint, AuthnRequest, CertificatePem, Credentials, EntityId, IdpConfig, IdpConfigBuilder,
     IdpDescriptor, IdpValidationPolicy, LogoutRequest, LogoutSubject, MetadataTrustPolicy, NameId,
     Outbound, PendingAuthnRequest, PendingLogoutRequest, PendingSnapshot, PrivateKeyPem, Saml,
@@ -76,8 +76,8 @@ fn builder_entrypoints_construct_facades_without_raw_mutation(
 
 #[test]
 fn facade_builder_and_browser_values_are_send_sync() {
-    assert_send_sync::<Saml<saml_rs::Sp>>();
-    assert_send_sync::<Saml<saml_rs::Idp>>();
+    assert_send_sync::<Saml<risaml::Sp>>();
+    assert_send_sync::<Saml<risaml::Idp>>();
     assert_send_sync::<SpConfigBuilder>();
     assert_send_sync::<IdpConfigBuilder>();
     assert_send_sync::<PendingAuthnRequest>();

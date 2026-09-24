@@ -4,19 +4,19 @@
     feature = "crypto-fips"
 ))]
 
-use saml_rs::constants::data_encryption_algorithm::AES_256;
-use saml_rs::constants::key_encryption_algorithm::RSA_OAEP_MGF1P;
-use saml_rs::constants::signature_algorithm::{RSA_SHA1, RSA_SHA256};
-use saml_rs::crypto::keys::load_private_key;
-use saml_rs::crypto::{
+use risaml::constants::data_encryption_algorithm::AES_256;
+use risaml::constants::key_encryption_algorithm::RSA_OAEP_MGF1P;
+use risaml::constants::signature_algorithm::{RSA_SHA1, RSA_SHA256};
+use risaml::crypto::keys::load_private_key;
+use risaml::crypto::{
     construct_message_signature, construct_saml_signature, encrypt_assertion,
     verify_message_signature, verify_signature,
 };
 #[cfg(not(feature = "crypto-fips"))]
-use saml_rs::crypto::{decrypt_assertion, AssertionDecryptionOptions};
+use risaml::crypto::{decrypt_assertion, AssertionDecryptionOptions};
 #[cfg(any(feature = "crypto-aws-lc", feature = "crypto-fips"))]
-use saml_rs::SamlError;
-use saml_rs::{initialize_crypto_provider, CryptoFipsStatus, CryptoProvider};
+use risaml::SamlError;
+use risaml::{initialize_crypto_provider, CryptoFipsStatus, CryptoProvider};
 
 const PRIVATE_KEY: &str = include_str!("fixtures/key/idp/provider_matrix_privkey.pkcs8.pem");
 const CERTIFICATE: &str = include_str!("fixtures/key/idp/cert.cer");

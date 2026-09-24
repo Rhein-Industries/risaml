@@ -31,7 +31,7 @@ pub mod raw {
 This remains supported:
 
 ```rust
-use saml_rs::raw::{
+use risaml::raw::{
     Binding, HttpRequest, IdentityProvider, LoginResponseOptions, ServiceProvider,
 };
 

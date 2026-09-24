@@ -1,4 +1,4 @@
-use saml_rs::{
+use risaml::{
     AcsEndpoint, AuthnRequest, EndpointUrl, EntityId, Idp, LogoutBinding, LogoutRequest, MessageId,
     NameIdCreationRequest, PendingAuthnRequest, PendingLogoutRequest, PendingSnapshot,
     RelayStateParam, Saml, SamlError, SamlInstant, SloEndpoint, Sp, SsoEndpoint, SsoRequestBinding,
@@ -16,18 +16,18 @@ fn typed_api_contract_exposes_role_markers() {
 
 #[test]
 fn typed_api_contract_reexports_raw_flow_types() {
-    let _ = std::any::type_name::<saml_rs::raw::Binding>();
-    let _ = std::any::type_name::<saml_rs::raw::FlowResult>();
-    let _ = std::any::type_name::<saml_rs::raw::BindingContext>();
-    let _ = std::any::type_name::<saml_rs::raw::HttpRequest>();
+    let _ = std::any::type_name::<risaml::raw::Binding>();
+    let _ = std::any::type_name::<risaml::raw::FlowResult>();
+    let _ = std::any::type_name::<risaml::raw::BindingContext>();
+    let _ = std::any::type_name::<risaml::raw::HttpRequest>();
 }
 
 #[test]
 fn typed_api_contract_reexports_config_builders() {
-    let _ = std::any::type_name::<saml_rs::SpConfigBuilder>();
-    let _ = std::any::type_name::<saml_rs::IdpConfigBuilder>();
-    let _ = std::any::type_name::<saml_rs::AuthnRequestSigningPolicy>();
-    let _ = std::any::type_name::<saml_rs::AuthnRequestValidationPolicy>();
+    let _ = std::any::type_name::<risaml::SpConfigBuilder>();
+    let _ = std::any::type_name::<risaml::IdpConfigBuilder>();
+    let _ = std::any::type_name::<risaml::AuthnRequestSigningPolicy>();
+    let _ = std::any::type_name::<risaml::AuthnRequestValidationPolicy>();
 }
 
 #[test]
@@ -77,35 +77,35 @@ fn typed_api_contract_reexports_typed_binding_building_blocks(
 #[test]
 fn typed_api_contract_reexports_browser_and_model_types() {
     let _: for<'a> fn(&'a AuthnRequest) -> &'a SamlInstant = AuthnRequest::issue_instant;
-    let _: for<'a> fn(&'a saml_rs::SsoResponse) -> &'a SamlInstant =
-        saml_rs::SsoResponse::issue_instant;
-    let _: for<'a> fn(&'a saml_rs::SsoSession) -> &'a SamlInstant =
-        saml_rs::SsoSession::response_issue_instant;
-    let _: for<'a> fn(&'a saml_rs::SsoSession) -> &'a SamlInstant =
-        saml_rs::SsoSession::assertion_issue_instant;
-    let _ = std::any::type_name::<saml_rs::BrowserInput<saml_rs::AuthnRequest>>();
-    let _ = std::any::type_name::<saml_rs::FormField>();
-    let _ = std::any::type_name::<saml_rs::Outbound<saml_rs::AuthnRequest>>();
-    let _ = std::any::type_name::<saml_rs::Pending<saml_rs::AuthnRequest>>();
-    let _ = std::any::type_name::<saml_rs::PostForm>();
-    let _ = std::any::type_name::<saml_rs::Started<saml_rs::AuthnRequest>>();
-    let _ = std::any::type_name::<saml_rs::Assertion>();
-    let _ = std::any::type_name::<saml_rs::AssertionId>();
-    let _ = std::any::type_name::<saml_rs::Attribute>();
-    let _ = std::any::type_name::<saml_rs::AttributeValue>();
-    let _ = std::any::type_name::<saml_rs::Attributes>();
-    let _ = std::any::type_name::<saml_rs::AuthnSession>();
-    let _ = std::any::type_name::<saml_rs::LogoutCompleted>();
-    let _ = std::any::type_name::<saml_rs::LogoutRequest>();
-    let _ = std::any::type_name::<saml_rs::LogoutResponse>();
-    let _ = std::any::type_name::<saml_rs::NameId>();
-    let _ = std::any::type_name::<saml_rs::NameIdPolicy>();
-    let _ = std::any::type_name::<saml_rs::Received<saml_rs::SsoResponse>>();
-    let _ = std::any::type_name::<saml_rs::RelayState>();
-    let _ = saml_rs::MAX_RELAY_STATE_BYTES;
-    let _ = std::any::type_name::<saml_rs::SessionIndex>();
-    let _ = std::any::type_name::<saml_rs::SsoResponse>();
-    let _ = std::any::type_name::<saml_rs::SsoSession>();
-    let _ = std::any::type_name::<saml_rs::Subject>();
-    let _ = std::any::type_name::<saml_rs::SubjectConfirmation>();
+    let _: for<'a> fn(&'a risaml::SsoResponse) -> &'a SamlInstant =
+        risaml::SsoResponse::issue_instant;
+    let _: for<'a> fn(&'a risaml::SsoSession) -> &'a SamlInstant =
+        risaml::SsoSession::response_issue_instant;
+    let _: for<'a> fn(&'a risaml::SsoSession) -> &'a SamlInstant =
+        risaml::SsoSession::assertion_issue_instant;
+    let _ = std::any::type_name::<risaml::BrowserInput<risaml::AuthnRequest>>();
+    let _ = std::any::type_name::<risaml::FormField>();
+    let _ = std::any::type_name::<risaml::Outbound<risaml::AuthnRequest>>();
+    let _ = std::any::type_name::<risaml::Pending<risaml::AuthnRequest>>();
+    let _ = std::any::type_name::<risaml::PostForm>();
+    let _ = std::any::type_name::<risaml::Started<risaml::AuthnRequest>>();
+    let _ = std::any::type_name::<risaml::Assertion>();
+    let _ = std::any::type_name::<risaml::AssertionId>();
+    let _ = std::any::type_name::<risaml::Attribute>();
+    let _ = std::any::type_name::<risaml::AttributeValue>();
+    let _ = std::any::type_name::<risaml::Attributes>();
+    let _ = std::any::type_name::<risaml::AuthnSession>();
+    let _ = std::any::type_name::<risaml::LogoutCompleted>();
+    let _ = std::any::type_name::<risaml::LogoutRequest>();
+    let _ = std::any::type_name::<risaml::LogoutResponse>();
+    let _ = std::any::type_name::<risaml::NameId>();
+    let _ = std::any::type_name::<risaml::NameIdPolicy>();
+    let _ = std::any::type_name::<risaml::Received<risaml::SsoResponse>>();
+    let _ = std::any::type_name::<risaml::RelayState>();
+    let _ = risaml::MAX_RELAY_STATE_BYTES;
+    let _ = std::any::type_name::<risaml::SessionIndex>();
+    let _ = std::any::type_name::<risaml::SsoResponse>();
+    let _ = std::any::type_name::<risaml::SsoSession>();
+    let _ = std::any::type_name::<risaml::Subject>();
+    let _ = std::any::type_name::<risaml::SubjectConfirmation>();
 }

@@ -11,20 +11,20 @@
 ))]
 #![allow(clippy::unwrap_used)]
 
-use saml_rs::binding::{base64_decode, base64_encode, deflate_raw_decode, deflate_raw_encode};
-use saml_rs::constants::signature_algorithm::RSA_SHA256;
-use saml_rs::constants::Binding;
-use saml_rs::entity::{iso8601_offset, BindingContext, EntitySetting, User};
-use saml_rs::error::SignatureVerificationReason;
-use saml_rs::flow::{FlowResult, HttpRequest};
-use saml_rs::idp::LoginResponseOptions;
-use saml_rs::logout::{
+use risaml::binding::{base64_decode, base64_encode, deflate_raw_decode, deflate_raw_encode};
+use risaml::constants::signature_algorithm::RSA_SHA256;
+use risaml::constants::Binding;
+use risaml::entity::{iso8601_offset, BindingContext, EntitySetting, User};
+use risaml::error::SignatureVerificationReason;
+use risaml::flow::{FlowResult, HttpRequest};
+use risaml::idp::LoginResponseOptions;
+use risaml::logout::{
     create_logout_request, create_logout_response, parse_logout_request, parse_logout_response,
 };
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::sp::LoginRequestOptions;
-use saml_rs::template::{replace_tags_by_value, LoginResponseAttribute, LoginResponseTemplate};
-use saml_rs::{IdentityProvider, SamlError, ServiceProvider};
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::sp::LoginRequestOptions;
+use risaml::template::{replace_tags_by_value, LoginResponseAttribute, LoginResponseTemplate};
+use risaml::{IdentityProvider, SamlError, ServiceProvider};
 
 const PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
 const CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");
@@ -231,7 +231,7 @@ fn fill_response(template: &str, idp_id: &str, email: &str) -> (String, String) 
 fn custom_idp() -> IdentityProvider {
     let mut setting = signing();
     setting.login_response_template = Some(LoginResponseTemplate {
-        context: Some(saml_rs::template::LOGIN_RESPONSE_TEMPLATE.into()),
+        context: Some(risaml::template::LOGIN_RESPONSE_TEMPLATE.into()),
         attributes: vec![attr("mail", "user.email"), attr("name", "user.name")],
     });
     IdentityProvider::from_config(&idp_config(false), setting).unwrap()
@@ -260,7 +260,7 @@ fn attacker_authn_request() -> &'static str {
 }
 
 fn assert_failed_message_signature(
-    result: Result<saml_rs::flow::FlowResult, SamlError>,
+    result: Result<risaml::flow::FlowResult, SamlError>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match result {
         Err(SamlError::SignatureVerification {
@@ -699,8 +699,8 @@ fn send_signed_assertion_custom_transforms(
     let idp = idp(false);
     let mut sp_setting = signing();
     sp_setting.transformation_algorithms = vec![
-        saml_rs::constants::transform_algorithm::ENVELOPED_SIGNATURE.into(),
-        saml_rs::constants::transform_algorithm::EXC_C14N.into(),
+        risaml::constants::transform_algorithm::ENVELOPED_SIGNATURE.into(),
+        risaml::constants::transform_algorithm::EXC_C14N.into(),
     ];
     let sp = ServiceProvider::from_config(&sp_config(false, true, false), sp_setting)?;
     let ctx = idp.create_login_response(&sp, binding, &User::new("a@example.com"), &opts("_r"))?;
@@ -859,7 +859,7 @@ fn signed_response_without_destination_is_rejected(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut setting = signing();
     setting.login_response_template = Some(LoginResponseTemplate {
-        context: Some(saml_rs::template::LOGIN_RESPONSE_TEMPLATE.into()),
+        context: Some(risaml::template::LOGIN_RESPONSE_TEMPLATE.into()),
         attributes: Vec::new(),
     });
     let idp = IdentityProvider::from_config(&idp_config(false), setting)?;
@@ -914,7 +914,7 @@ fn flow_conformance_assertion_only_signed_post_allows_omitted_response_destinati
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut setting = signing();
     setting.login_response_template = Some(LoginResponseTemplate {
-        context: Some(saml_rs::template::LOGIN_RESPONSE_TEMPLATE.into()),
+        context: Some(risaml::template::LOGIN_RESPONSE_TEMPLATE.into()),
         attributes: Vec::new(),
     });
     let idp = IdentityProvider::from_config(&idp_config(false), setting)?;
@@ -1007,7 +1007,7 @@ fn flow_conformance_required_response_signature_accepts_simplesign_detached_sign
 fn send_custom_signed_message(binding: Binding) -> Result<(), Box<dyn std::error::Error>> {
     let mut setting = signing();
     setting.login_response_template = Some(LoginResponseTemplate {
-        context: Some(saml_rs::template::LOGIN_RESPONSE_TEMPLATE.into()),
+        context: Some(risaml::template::LOGIN_RESPONSE_TEMPLATE.into()),
         attributes: vec![attr("mail", "user.email"), attr("name", "user.name")],
     });
     let idp = IdentityProvider::from_config(&idp_config(false), setting)?;
@@ -1077,7 +1077,7 @@ fn flow_conformance_send_assertion_and_message_simplesign() -> Result<(), Box<dy
 fn send_custom_assertion_and_message(binding: Binding) -> Result<(), Box<dyn std::error::Error>> {
     let mut setting = signing();
     setting.login_response_template = Some(LoginResponseTemplate {
-        context: Some(saml_rs::template::LOGIN_RESPONSE_TEMPLATE.into()),
+        context: Some(risaml::template::LOGIN_RESPONSE_TEMPLATE.into()),
         attributes: vec![attr("mail", "user.email"), attr("name", "user.name")],
     });
     let idp = IdentityProvider::from_config(&idp_config(false), setting)?;
@@ -1147,7 +1147,7 @@ fn encrypted_signed(custom: bool, with_message: bool) -> Result<(), Box<dyn std:
     idp_setting.is_assertion_encrypted = true;
     if custom {
         idp_setting.login_response_template = Some(LoginResponseTemplate {
-            context: Some(saml_rs::template::LOGIN_RESPONSE_TEMPLATE.into()),
+            context: Some(risaml::template::LOGIN_RESPONSE_TEMPLATE.into()),
             attributes: vec![attr("mail", "user.email"), attr("name", "user.name")],
         });
     }
@@ -1698,7 +1698,7 @@ fn flow_conformance_encrypted_prefix_default_saml() -> Result<(), Box<dyn std::e
 // ----- malformed response (57-59) -----
 
 fn malformed(binding: Binding) -> Result<(), Box<dyn std::error::Error>> {
-    use saml_rs::binding::base64_encode;
+    use risaml::binding::base64_encode;
     let idp = idp(false);
     let sp = sp(true, false);
     let bad = base64_encode(b"<<<not-xml");
@@ -1730,7 +1730,7 @@ const ATTACK: &str = include_str!("fixtures/misc/attack_response_signed.xml");
 #[test]
 fn flow_conformance_reject_signature_wrapped_response_case_1(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use saml_rs::binding::base64_encode;
+    use risaml::binding::base64_encode;
     let idp = idp(false);
     let sp = sp(true, false);
     let request = HttpRequest::post(vec![(
@@ -1764,12 +1764,12 @@ fn flow_conformance_use_signed_contents_in_wrapped_response_case_2(
 // ----- two-tier status error (62-64) -----
 
 fn two_tier_status(binding: Binding) -> Result<(), Box<dyn std::error::Error>> {
-    use saml_rs::binding::base64_encode;
+    use risaml::binding::base64_encode;
     let idp = idp(false);
     let sp = sp(true, false);
     let request = match binding {
         Binding::Redirect => {
-            use saml_rs::binding::deflate_raw_encode;
+            use risaml::binding::deflate_raw_encode;
             let enc = base64_encode(&deflate_raw_encode(FAILED.as_bytes())?);
             HttpRequest::redirect(vec![("SAMLResponse".into(), enc)])
         }

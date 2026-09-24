@@ -2,9 +2,9 @@
 //! panic on hostile input, and DEFLATE must round-trip. Dependency-free
 //! (deterministic LCG instead of a property-testing crate).
 
-use saml_rs::binding::{base64_decode, deflate_raw_decode, deflate_raw_encode};
-use saml_rs::context::is_valid_xml;
-use saml_rs::xml::{extract, ExtractorField};
+use risaml::binding::{base64_decode, deflate_raw_decode, deflate_raw_encode};
+use risaml::context::is_valid_xml;
+use risaml::xml::{extract, ExtractorField};
 
 fn lcg(seed: &mut u64) -> u8 {
     *seed = seed

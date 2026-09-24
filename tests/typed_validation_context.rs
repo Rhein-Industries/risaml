@@ -3,12 +3,12 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use saml_rs::binding::base64_encode;
-use saml_rs::constants::{Binding, ParserType};
-use saml_rs::error::{SubjectConfirmationReason, TimeWindowField};
-use saml_rs::flow::{flow, FlowOptions, FlowResult, HttpRequest};
-use saml_rs::util::Value;
-use saml_rs::{
+use risaml::binding::base64_encode;
+use risaml::constants::{Binding, ParserType};
+use risaml::error::{SubjectConfirmationReason, TimeWindowField};
+use risaml::flow::{flow, FlowOptions, FlowResult, HttpRequest};
+use risaml::util::Value;
+use risaml::{
     AuthnRequest, ClockSkew, ReplayCache, ReplayKey, ReplayPolicy, SamlError,
     SamlValidationContext, SsoSession,
 };

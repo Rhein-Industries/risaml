@@ -1,7 +1,7 @@
-use saml_rs::constants::Binding;
-use saml_rs::metadata::Endpoint;
-use saml_rs::SamlError;
-use saml_rs::{
+use risaml::constants::Binding;
+use risaml::metadata::Endpoint;
+use risaml::SamlError;
+use risaml::{
     AcsEndpoint, AuthnRequest, EntityId, LogoutBinding, MessageId, PendingAuthnRequest,
     PendingLogoutRequest, PendingSnapshot, RelayState, RelayStateParam, SamlInstant, SloEndpoint,
     SsoEndpoint, SsoRequestBinding, SsoResponseBinding, MAX_RELAY_STATE_BYTES,
@@ -234,7 +234,7 @@ fn typed_bindings_pending_authn_request_snapshot_round_trips_without_raw_state(
         RelayStateParam::try_from_option(Some("relay".to_string()))?,
         acs,
         SsoResponseBinding::Post,
-        saml_rs::EntityId::try_new("https://idp.example.com/metadata")?,
+        risaml::EntityId::try_new("https://idp.example.com/metadata")?,
     )?
     .with_issue_instant(SamlInstant::try_new("2026-07-04T12:00:00Z")?)
     .with_expiration(SamlInstant::try_new("2026-07-04T12:05:00Z")?);
@@ -320,7 +320,7 @@ fn typed_bindings_pending_authn_request_rejects_mismatched_acs_and_response_bind
         RelayStateParam::Absent,
         acs,
         SsoResponseBinding::Post,
-        saml_rs::EntityId::try_new("https://idp.example.com/metadata")?,
+        risaml::EntityId::try_new("https://idp.example.com/metadata")?,
     );
 
     assert!(matches!(result, Err(SamlError::Invalid(_))));
@@ -338,7 +338,7 @@ fn valid_authn_snapshot() -> PendingSnapshot<AuthnRequest> {
     )
 }
 
-fn valid_logout_snapshot() -> PendingSnapshot<saml_rs::LogoutRequest> {
+fn valid_logout_snapshot() -> PendingSnapshot<risaml::LogoutRequest> {
     PendingSnapshot::logout_request(
         "_logout123",
         RelayStateParam::Absent,

@@ -10,9 +10,9 @@
     feature = "crypto-fips"
 ))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use saml_rs::constants::signature_algorithm::RSA_SHA256;
-    use saml_rs::raw::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-    use saml_rs::raw::{
+    use risaml::constants::signature_algorithm::RSA_SHA256;
+    use risaml::raw::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+    use risaml::raw::{
         Binding, EntitySetting, HttpRequest, IdentityProvider, LoginResponseOptions,
         ServiceProvider, User,
     };

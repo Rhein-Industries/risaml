@@ -4,24 +4,24 @@
     feature = "crypto-fips"
 ))]
 
-use saml_rs::binding::base64_decode;
-use saml_rs::constants::signature_algorithm::RSA_SHA256;
-use saml_rs::constants::Binding;
-use saml_rs::constants::{
+use risaml::binding::base64_decode;
+use risaml::constants::signature_algorithm::RSA_SHA256;
+use risaml::constants::Binding;
+use risaml::constants::{
     data_encryption_algorithm::AES_256, key_encryption_algorithm::RSA_OAEP_MGF1P,
 };
-use saml_rs::crypto::keys::load_private_key;
-use saml_rs::crypto::{construct_saml_signature, encrypt_assertion, verify_signature};
+use risaml::crypto::keys::load_private_key;
+use risaml::crypto::{construct_saml_signature, encrypt_assertion, verify_signature};
 #[cfg(not(feature = "crypto-fips"))]
-use saml_rs::crypto::{decrypt_assertion, AssertionDecryptionOptions};
-use saml_rs::entity::{EntitySetting, SignatureAction, SignatureConfig, User};
-use saml_rs::flow::HttpRequest;
-use saml_rs::idp::LoginResponseOptions;
-use saml_rs::logout::{create_logout_request, create_logout_response};
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::template::{LoginResponseAttribute, LoginResponseTemplate, LOGIN_RESPONSE_TEMPLATE};
-use saml_rs::xml::dom::{parse_roots, Node};
-use saml_rs::{IdentityProvider, SamlError, ServiceProvider};
+use risaml::crypto::{decrypt_assertion, AssertionDecryptionOptions};
+use risaml::entity::{EntitySetting, SignatureAction, SignatureConfig, User};
+use risaml::flow::HttpRequest;
+use risaml::idp::LoginResponseOptions;
+use risaml::logout::{create_logout_request, create_logout_response};
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::template::{LoginResponseAttribute, LoginResponseTemplate, LOGIN_RESPONSE_TEMPLATE};
+use risaml::xml::dom::{parse_roots, Node};
+use risaml::{IdentityProvider, SamlError, ServiceProvider};
 
 const PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
 const CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");

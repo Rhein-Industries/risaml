@@ -1,20 +1,20 @@
-use saml_rs::binding::{base64_encode, deflate_raw_encode};
-use saml_rs::constants::{Binding, ParserType};
-use saml_rs::flow::{flow, FlowOptions, FlowResult, HttpRequest};
-use saml_rs::{SamlError, SsoSession};
+use risaml::binding::{base64_encode, deflate_raw_encode};
+use risaml::constants::{Binding, ParserType};
+use risaml::flow::{flow, FlowOptions, FlowResult, HttpRequest};
+use risaml::{SamlError, SsoSession};
 
 #[cfg(all(
     not(feature = "crypto-fips"),
     any(feature = "crypto-rustcrypto", feature = "crypto-aws-lc")
 ))]
-use saml_rs::constants::{
+use risaml::constants::{
     data_encryption_algorithm::AES_256, key_encryption_algorithm::RSA_OAEP_MGF1P,
 };
 #[cfg(all(
     not(feature = "crypto-fips"),
     any(feature = "crypto-rustcrypto", feature = "crypto-aws-lc")
 ))]
-use saml_rs::crypto::encrypt_assertion;
+use risaml::crypto::encrypt_assertion;
 
 const PROTOCOL_NS: &str = "urn:oasis:names:tc:SAML:2.0:protocol";
 const ASSERTION_NS: &str = "urn:oasis:names:tc:SAML:2.0:assertion";

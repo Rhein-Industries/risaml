@@ -6,16 +6,16 @@
 
 use std::cell::RefCell;
 
-use saml_rs::binding::{base64_decode, deflate_raw_decode};
-use saml_rs::constants::signature_algorithm::RSA_SHA256;
-use saml_rs::constants::Binding;
-use saml_rs::entity::{iso8601_offset, BindingContext, EntitySetting, User};
-use saml_rs::flow::HttpRequest;
-use saml_rs::idp::LoginResponseOptions;
-use saml_rs::logout::{create_logout_request, create_logout_response};
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::template::{replace_tags_by_value, LoginResponseTemplate};
-use saml_rs::{IdentityProvider, SamlError, ServiceProvider};
+use risaml::binding::{base64_decode, deflate_raw_decode};
+use risaml::constants::signature_algorithm::RSA_SHA256;
+use risaml::constants::Binding;
+use risaml::entity::{iso8601_offset, BindingContext, EntitySetting, User};
+use risaml::flow::HttpRequest;
+use risaml::idp::LoginResponseOptions;
+use risaml::logout::{create_logout_request, create_logout_response};
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::template::{replace_tags_by_value, LoginResponseTemplate};
+use risaml::{IdentityProvider, SamlError, ServiceProvider};
 
 const PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
 const CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");
@@ -210,7 +210,7 @@ fn caller_login_response_template_is_rewritten_before_custom_callback(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut setting = prefixed_setting("samlp2", "saml2");
     setting.login_response_template = Some(LoginResponseTemplate {
-        context: Some(saml_rs::template::LOGIN_RESPONSE_TEMPLATE.into()),
+        context: Some(risaml::template::LOGIN_RESPONSE_TEMPLATE.into()),
         attributes: Vec::new(),
     });
     let idp = idp_with_setting(setting)?;

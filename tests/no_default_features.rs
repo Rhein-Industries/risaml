@@ -4,15 +4,15 @@
     feature = "crypto-fips"
 )))]
 
-use saml_rs::binding::{base64_decode, base64_encode, deflate_raw_decode};
-use saml_rs::constants::{Binding, ParserType};
-use saml_rs::entity::{EntitySetting, User};
-use saml_rs::flow::{flow, FlowOptions, HttpRequest};
-use saml_rs::idp::LoginResponseOptions;
-use saml_rs::logout::{create_logout_request, create_logout_response};
-use saml_rs::metadata::{Endpoint, IdpMetadata, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::xml::{extract, ExtractorField};
-use saml_rs::{
+use risaml::binding::{base64_decode, base64_encode, deflate_raw_decode};
+use risaml::constants::{Binding, ParserType};
+use risaml::entity::{EntitySetting, User};
+use risaml::flow::{flow, FlowOptions, HttpRequest};
+use risaml::idp::LoginResponseOptions;
+use risaml::logout::{create_logout_request, create_logout_response};
+use risaml::metadata::{Endpoint, IdpMetadata, IdpMetadataConfig, SpMetadataConfig};
+use risaml::xml::{extract, ExtractorField};
+use risaml::{
     AcsEndpoint, AssertionSignaturePolicy, AuthnRequest, AuthnRequestSigningPolicy,
     AuthnRequestValidationPolicy, BrowserInput, CertificatePem, EntityId, IdentityProvider,
     IdpConfig, IdpDescriptor, IdpValidationPolicy, LogoutSignaturePolicy, LogoutSigning,
@@ -64,7 +64,7 @@ fn assert_unsupported(result: Result<impl Sized, SamlError>) {
     assert!(matches!(result, Err(SamlError::Unsupported(_))));
 }
 
-fn sp_config_builder() -> Result<saml_rs::SpConfigBuilder, SamlError> {
+fn sp_config_builder() -> Result<risaml::SpConfigBuilder, SamlError> {
     Ok(
         SpConfig::builder(EntityId::try_new("https://sp.example.com/metadata")?)
             .acs_endpoint(AcsEndpoint::post("https://sp.example.com/acs")?)
@@ -72,7 +72,7 @@ fn sp_config_builder() -> Result<saml_rs::SpConfigBuilder, SamlError> {
     )
 }
 
-fn idp_config_builder() -> Result<saml_rs::IdpConfigBuilder, SamlError> {
+fn idp_config_builder() -> Result<risaml::IdpConfigBuilder, SamlError> {
     Ok(
         IdpConfig::builder(EntityId::try_new("https://idp.example.com/metadata")?)
             .sso_endpoint(SsoEndpoint::redirect("https://idp.example.com/sso")?)
@@ -98,8 +98,8 @@ fn typed_idp_config() -> Result<IdpConfig, SamlError> {
 
 fn typed_protocol_facades() -> Result<
     (
-        Saml<saml_rs::Sp>,
-        Saml<saml_rs::Idp>,
+        Saml<risaml::Sp>,
+        Saml<risaml::Idp>,
         SpDescriptor,
         IdpDescriptor,
     ),

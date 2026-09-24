@@ -1,6 +1,6 @@
 # Standards Conformance Policy
 
-This document defines how `saml-rs` interprets and implements requirements from
+This document defines how `risaml` interprets and implements requirements from
 the OASIS SAML specifications. It is the maintainer policy for new protocol
 behavior, validation, rendering, metadata, bindings, profiles, and
 compatibility work.
@@ -89,7 +89,7 @@ entire profile, binding, operational mode, or SAML V2.0 as a whole. A broad
 claim such as "SAML V2.0 conformant" requires a documented support matrix that
 shows the exact claimed features and their normative coverage.
 
-This policy applies to every SAML feature that `saml-rs` implements. It neither
+This policy applies to every SAML feature that `risaml` implements. It neither
 declares the crate's current support nor limits future support. Bindings,
 profiles, operational modes, queries, extensions, and other capabilities may
 be added incrementally, provided each one has an explicit boundary and meets
@@ -253,7 +253,7 @@ current feature support:
   rule or an explicitly identified library or application policy.
 - **LogoutRequest expiration:** `LogoutRequest@NotOnOrAfter` is optional for
   inbound general LogoutRequest processing, and Core says a recipient may
-  discard the message after that instant. saml-rs' fail-closed rejection of an
+  discard the message after that instant. risaml's fail-closed rejection of an
   expired value is therefore documented as library policy, not an OASIS
   receiver `MUST`. The required UTC `IssueInstant` is checked separately and
   does not imply a library-selected maximum request age.

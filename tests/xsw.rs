@@ -8,15 +8,15 @@
 #![allow(clippy::unwrap_used)]
 
 use ribergshamra::{sign, DsigContext, KeysManager};
-use saml_rs::binding::base64_encode;
-use saml_rs::constants::signature_algorithm::RSA_SHA256;
-use saml_rs::constants::{digest_for_signature, namespace, transform_algorithm};
-use saml_rs::crypto::keys::load_private_key;
-use saml_rs::crypto::{construct_saml_signature, verify_signature};
-use saml_rs::flow::{flow, FlowOptions, HttpRequest};
-use saml_rs::util::normalize_cert_string;
-use saml_rs::xml::{extract, ExtractorField};
-use saml_rs::{constants::Binding, constants::ParserType, SamlError};
+use risaml::binding::base64_encode;
+use risaml::constants::signature_algorithm::RSA_SHA256;
+use risaml::constants::{digest_for_signature, namespace, transform_algorithm};
+use risaml::crypto::keys::load_private_key;
+use risaml::crypto::{construct_saml_signature, verify_signature};
+use risaml::flow::{flow, FlowOptions, HttpRequest};
+use risaml::util::normalize_cert_string;
+use risaml::xml::{extract, ExtractorField};
+use risaml::{constants::Binding, constants::ParserType, SamlError};
 
 const PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
 const CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");

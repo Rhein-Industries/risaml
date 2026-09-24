@@ -1,12 +1,12 @@
 //! Historical regression cases derived from npm `samlify` issue tests.
 
-use saml_rs::binding::{base64_decode, deflate_raw_decode};
-use saml_rs::constants::{Binding, ParserType};
-use saml_rs::entity::EntitySetting;
-use saml_rs::metadata::{generate_sp_metadata, Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::util::Value;
-use saml_rs::xml::{extract, ExtractorField};
-use saml_rs::{IdentityProvider, ServiceProvider};
+use risaml::binding::{base64_decode, deflate_raw_decode};
+use risaml::constants::{Binding, ParserType};
+use risaml::entity::EntitySetting;
+use risaml::metadata::{generate_sp_metadata, Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::util::Value;
+use risaml::xml::{extract, ExtractorField};
+use risaml::{IdentityProvider, ServiceProvider};
 
 const DUMPES_ISSUER: &str = include_str!("fixtures/misc/dumpes_issuer_response.xml");
 const RESPONSE: &str = include_str!("fixtures/misc/response.xml");
@@ -179,7 +179,7 @@ fn issue_86_duplicate_issuer_deduped() -> Result<(), Box<dyn std::error::Error>>
 #[test]
 fn issue_87_existence_check_for_signature() -> Result<(), Box<dyn std::error::Error>> {
     // An unsigned response verifies to false (no signature present).
-    let (verified, _) = saml_rs::crypto::verify_signature(RESPONSE, &[])?;
+    let (verified, _) = risaml::crypto::verify_signature(RESPONSE, &[])?;
     assert!(!verified);
     Ok(())
 }

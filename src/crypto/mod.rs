@@ -1,6 +1,6 @@
 //! XML security backend abstraction.
 //!
-//! XML-DSig / XML-Enc / C14N live in `ribergshamra`; `saml-rs` only orchestrates
+//! XML-DSig / XML-Enc / C14N live in `ribergshamra`; `risaml` only orchestrates
 //! through the [`XmlSecurityBackend`] trait.
 
 mod backend;

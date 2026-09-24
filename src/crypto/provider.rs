@@ -77,7 +77,7 @@ fn provider_error(action: &str, error: impl fmt::Display) -> SamlError {
 /// Inspect the selected provider without triggering initialization.
 ///
 /// A `crypto-fips` build reports [`CryptoFipsStatus::Uninitialized`] until
-/// [`initialize_crypto_provider`] or another `saml-rs` crypto operation runs.
+/// [`initialize_crypto_provider`] or another `risaml` crypto operation runs.
 ///
 /// # Errors
 ///
@@ -91,7 +91,7 @@ pub fn crypto_provider_info() -> Result<CryptoProviderInfo, SamlError> {
 /// Initialize and attest the selected document-crypto provider.
 ///
 /// Initialization is idempotent and its first result is retained for the
-/// process lifetime. `saml-rs` calls this automatically before its first
+/// process lifetime. `risaml` calls this automatically before its first
 /// ribergshamra operation; applications may call it during startup to fail
 /// early and inspect FIPS attestation before accepting traffic.
 ///

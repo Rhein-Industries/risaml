@@ -1,67 +1,34 @@
 # Release Process
 
-This release process is for the independent, unofficial **saml-rs** Rust
-package.
+This release process is for **risaml**, Rhein Industries' maintained fork of
+saml-rs. The repository publishes one crate: `risaml`.
 
-This repository publishes one crate after the migration: `saml-rs`.
+Git tags use `v*`, for example `v0.6.0`.
 
-Git tags use `v*`, for example `v0.1.5`.
+Publishing is manual for now. The upstream release-plz workflow (which used
+crates.io trusted publishing configured for the saml-rs crate) is not part of
+the fork, and no workflow in this repository publishes or needs a
+crates.io token.
 
-## Normal release process
+## Manual release
 
-1. Merge changes to `main` using Conventional Commit titles: `fix: ...`,
-   `feat: ...`, or `feat!: ...` / `BREAKING CHANGE: ...`.
-2. The `Release-plz` workflow opens or updates a release PR.
-3. Review the version bump, `Cargo.lock`, and `CHANGELOG.md`.
-4. Merge the release PR after CI passes.
-5. `release-plz release` publishes the crate, creates the `vX.Y.Z` tag, and
-   creates the GitHub release.
-
-`release-plz.toml` sets `release_always = false`, so publication happens only
-from the merged release PR, not from every push to `main`.
-
-Old alias crates are retired and frozen. Do not yank healthy published alias
-versions as a deprecation mechanism; yank only for a bad release, security, or
-legal reason.
-
-## GitHub and crates.io setup
-
-Recommended setup is crates.io trusted publishing:
-
-1. In GitHub, allow Actions to create pull requests.
-2. In GitHub, create the `release` environment and allow deployments from the
-   `main` branch. The workflow runs from `main`; the `vX.Y.Z` tag is created
-   later by release-plz.
-3. In crates.io, configure trusted publishing for `saml-rs`: repository
-   `salasebas/saml-rs`, workflow `.github/workflows/release-plz.yml`,
-   environment `release`.
-4. Do not configure `CARGO_REGISTRY_TOKEN` when using trusted publishing.
-
-Before publishing, configure trusted publishing for the final GitHub repository
-name if the repository rename has not happened yet.
-
-## Manual fallback
-
-1. Bump `[package] version` in the root `Cargo.toml`.
-2. Refresh `Cargo.lock` with `cargo build`.
-3. Run checks:
+1. Bump `[package] version` in `Cargo.toml` and add the version's entry at the
+   top of `CHANGELOG.md` (the changelog is maintained by hand).
+2. Refresh `Cargo.lock` (`cargo update --workspace`) and let CI build and test
+   the release commit on `main`.
+3. Validate the package without uploading:
 
    ```bash
-   cargo fmt --all --check
-   cargo clippy -p saml-rs --all-targets -- -D warnings
-   cargo nextest run -p saml-rs
-   cargo test -p saml-rs --doc
-   cargo check -p saml-rs --no-default-features
+   cargo publish -p risaml --dry-run
    ```
 
-4. Update `CHANGELOG.md`.
-5. Publish the crate:
+4. Publish the crate (a maintainer with crates.io ownership of `risaml`):
 
    ```bash
-   cargo publish -p saml-rs
+   cargo publish -p risaml
    ```
 
-6. Create the `vX.Y.Z` tag and GitHub release.
+5. Create the `vX.Y.Z` tag and the GitHub release.
 
-Use `cargo publish -p saml-rs --dry-run` to validate a publish without
-uploading.
+`ribergshamra` must be published to crates.io before `risaml` can be, because
+`risaml` depends on it by version.

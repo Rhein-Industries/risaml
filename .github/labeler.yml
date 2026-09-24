@@ -74,8 +74,6 @@ release:
       - any-glob-to-any-file:
           - "CHANGELOG.md"
           - "RELEASE.md"
-          - "release-plz.toml"
-          - ".github/workflows/release-plz.yml"
 
 dependencies:
   - changed-files:

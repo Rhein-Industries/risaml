@@ -106,7 +106,7 @@ pub(super) fn render_default_logout_request(
     if let Some(value) = timing.not_on_or_after {
         // SAML Core 2.0 §3.7.3.2 requires this attribute when the
         // LogoutRequest producer is acting as the Session Authority. The
-        // selected lifetime remains saml-rs policy.
+        // selected lifetime remains risaml policy.
         attrs.push(("NotOnOrAfter", value));
     }
 

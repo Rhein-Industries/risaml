@@ -5,18 +5,18 @@
 ))]
 
 use ribergshamra::{sign, DsigContext, KeysManager};
-use saml_rs::constants::signature_algorithm::RSA_SHA256;
-use saml_rs::constants::{digest_for_signature, namespace, transform_algorithm};
-use saml_rs::crypto::keys::load_private_key;
-use saml_rs::crypto::{
+use risaml::constants::signature_algorithm::RSA_SHA256;
+use risaml::constants::{digest_for_signature, namespace, transform_algorithm};
+use risaml::crypto::keys::load_private_key;
+use risaml::crypto::{
     construct_saml_signature, verify_metadata_signature_detailed,
     verify_metadata_signature_detailed_with_limits, verify_metadata_signature_with_limits,
 };
-use saml_rs::entity::{SignatureAction, SignatureConfig};
-use saml_rs::metadata::IdpMetadata;
-use saml_rs::util::normalize_cert_string;
-use saml_rs::xml::XmlLimits;
-use saml_rs::SamlError;
+use risaml::entity::{SignatureAction, SignatureConfig};
+use risaml::metadata::IdpMetadata;
+use risaml::util::normalize_cert_string;
+use risaml::xml::XmlLimits;
+use risaml::SamlError;
 
 const PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
 const CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");

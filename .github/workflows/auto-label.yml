@@ -20,7 +20,8 @@ jobs:
     steps:
       - name: Apply path labels
         uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        # repo-token defaults to the workflow's own github.token; no
+        # repository secret is used.
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
           sync-labels: false
           dot: true

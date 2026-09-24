@@ -18,10 +18,10 @@
 //! typed flows model directly.
 //!
 //! ```no_run
-//! use saml_rs::raw::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-//! use saml_rs::raw::{Binding, EntitySetting, IdentityProvider, ServiceProvider};
+//! use risaml::raw::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+//! use risaml::raw::{Binding, EntitySetting, IdentityProvider, ServiceProvider};
 //!
-//! # fn main() -> Result<(), saml_rs::SamlError> {
+//! # fn main() -> Result<(), risaml::SamlError> {
 //! let idp = IdentityProvider::from_config(
 //!     &IdpMetadataConfig {
 //!         entity_id: "https://idp.example.com/metadata".into(),

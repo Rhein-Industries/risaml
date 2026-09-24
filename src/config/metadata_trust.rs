@@ -28,11 +28,11 @@ use super::descriptors::EntityId;
 /// # Examples
 ///
 /// ```no_run
-/// use saml_rs::{CertificatePem, EntityId, IdpDescriptor, MetadataTrustPolicy};
+/// use risaml::{CertificatePem, EntityId, IdpDescriptor, MetadataTrustPolicy};
 ///
 /// # fn load_metadata() -> String { unimplemented!() }
 /// # fn load_metadata_signing_cert() -> String { unimplemented!() }
-/// # fn run() -> Result<(), saml_rs::SamlError> {
+/// # fn run() -> Result<(), risaml::SamlError> {
 /// let cert = CertificatePem::new(load_metadata_signing_cert());
 /// let certificates = [cert];
 /// let idp = IdpDescriptor::from_metadata_xml_for(

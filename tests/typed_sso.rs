@@ -9,12 +9,12 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use saml_rs::binding::{base64_decode, base64_encode, deflate_raw_decode};
-use saml_rs::error::TimeWindowField;
-use saml_rs::raw::Binding;
-use saml_rs::template::{LoginResponseTemplate, LOGIN_RESPONSE_TEMPLATE};
-use saml_rs::xml::dom::parse;
-use saml_rs::{
+use risaml::binding::{base64_decode, base64_encode, deflate_raw_decode};
+use risaml::error::TimeWindowField;
+use risaml::raw::Binding;
+use risaml::template::{LoginResponseTemplate, LOGIN_RESPONSE_TEMPLATE};
+use risaml::xml::dom::parse;
+use risaml::{
     AcsEndpoint, AuthnRequest, BrowserInput, CertificatePem, Credentials, EntityId, ForceAuthn,
     FormField, IdpConfig, IdpDescriptor, IdpValidationPolicy, MetadataTrustPolicy, NameId,
     NameIdFormat, Outbound, PendingAuthnRequest, PendingSnapshot, PrivateKeyPem, Received,
@@ -23,7 +23,7 @@ use saml_rs::{
     SsoEndpoint, SsoResponse, SsoResponseBinding, StartSso, Subject, TemplatePolicy,
 };
 #[cfg(not(feature = "crypto-fips"))]
-use saml_rs::{XmlEncryptionPolicy, XmlPolicy};
+use risaml::{XmlEncryptionPolicy, XmlPolicy};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use url::Url;
 
@@ -173,11 +173,11 @@ fn hostile_idp_config() -> Result<IdpConfig, SamlError> {
         .build()
 }
 
-fn facades() -> Result<(Saml<saml_rs::Sp>, Saml<saml_rs::Idp>), SamlError> {
+fn facades() -> Result<(Saml<risaml::Sp>, Saml<risaml::Idp>), SamlError> {
     Ok((Saml::sp(sp_config()?)?, Saml::idp(idp_config()?)?))
 }
 
-fn compatibility_facades() -> Result<(Saml<saml_rs::Sp>, Saml<saml_rs::Idp>), SamlError> {
+fn compatibility_facades() -> Result<(Saml<risaml::Sp>, Saml<risaml::Idp>), SamlError> {
     let sp = SpConfig::builder(EntityId::try_new(SP_ENTITY_ID)?)
         .acs_endpoint(AcsEndpoint::post(SP_ACS_POST)?.mark_default())
         .acs_endpoint(AcsEndpoint::simple_sign(SP_ACS_SIMPLESIGN)?)
@@ -194,7 +194,7 @@ fn compatibility_facades() -> Result<(Saml<saml_rs::Sp>, Saml<saml_rs::Idp>), Sa
     Ok((Saml::sp(sp)?, Saml::idp(idp)?))
 }
 
-fn hostile_facades() -> Result<(Saml<saml_rs::Sp>, Saml<saml_rs::Idp>), SamlError> {
+fn hostile_facades() -> Result<(Saml<risaml::Sp>, Saml<risaml::Idp>), SamlError> {
     Ok((
         Saml::sp(hostile_sp_config()?)?,
         Saml::idp(hostile_idp_config()?)?,
@@ -202,8 +202,8 @@ fn hostile_facades() -> Result<(Saml<saml_rs::Sp>, Saml<saml_rs::Idp>), SamlErro
 }
 
 fn descriptors(
-    sp: &Saml<saml_rs::Sp>,
-    idp: &Saml<saml_rs::Idp>,
+    sp: &Saml<risaml::Sp>,
+    idp: &Saml<risaml::Idp>,
 ) -> Result<(SpDescriptor, IdpDescriptor), SamlError> {
     let sp_descriptor = SpDescriptor::from_metadata_xml_for(
         EntityId::try_new(SP_ENTITY_ID)?,
@@ -331,8 +331,8 @@ fn replace_element_issue_instant(
 }
 
 struct SsoExchange {
-    sp: Saml<saml_rs::Sp>,
-    idp: Saml<saml_rs::Idp>,
+    sp: Saml<risaml::Sp>,
+    idp: Saml<risaml::Idp>,
     sp_descriptor: SpDescriptor,
     idp_descriptor: IdpDescriptor,
     pending: PendingAuthnRequest,
@@ -702,7 +702,7 @@ fn typed_facade_start_sso_redirect_returns_url() -> Result<(), Box<dyn std::erro
     assert_eq!(started.pending.request_id(), started.outbound.id());
     assert_eq!(
         started.pending.request_binding(),
-        Some(saml_rs::SsoRequestBinding::Redirect)
+        Some(risaml::SsoRequestBinding::Redirect)
     );
     Ok(())
 }
@@ -1092,7 +1092,7 @@ fn typed_facade_rejects_response_binding_mismatch() -> Result<(), Box<dyn std::e
         validation(),
     ) {
         Err(SamlError::UnsupportedBinding { binding }) => {
-            assert_eq!(binding, saml_rs::raw::Binding::Post);
+            assert_eq!(binding, risaml::raw::Binding::Post);
             Ok(())
         }
         other => Err(format!("expected UnsupportedBinding, got {other:?}").into()),

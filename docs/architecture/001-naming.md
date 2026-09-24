@@ -4,9 +4,13 @@ This document records the reviewed public names used by the typed facade.
 
 ## Crate Names
 
-- Cargo package: `saml-rs`
-- Rust import path: `saml_rs`
+- Cargo package: `risaml`
+- Rust import path: `risaml`
 - Canonical error type: `SamlError`
+
+risaml 0.6.0 renamed the package and import path from `saml-rs` /
+`saml_rs` when Rhein Industries forked saml-rs 0.5.0. Type and module names
+are unchanged by the fork.
 
 Do not introduce public names prefixed with `OpenSaml`.
 

@@ -1,7 +1,7 @@
 //! Historical regression cases derived from npm `samlify` extractor tests.
 
-use saml_rs::util::Value;
-use saml_rs::xml::{extract, ExtractorField};
+use risaml::util::Value;
+use risaml::xml::{extract, ExtractorField};
 
 const RESPONSE: &str = include_str!("fixtures/misc/response_signed.xml");
 const SPMETA: &str = include_str!("fixtures/misc/spmeta.xml");

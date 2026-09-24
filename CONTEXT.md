@@ -1,7 +1,7 @@
 # SAML Protocol
 
 This context names the SAML roles and flows whose protocol obligations are
-modeled by saml-rs.
+modeled by risaml.
 
 ## Language
 

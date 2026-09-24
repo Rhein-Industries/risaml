@@ -348,7 +348,7 @@ mod tests {
         let sp = SpMetadata::from_xml(SPMETA)?;
         assert!(sp.get_support_bindings().contains(&Binding::Redirect));
         let mut path = std::env::temp_dir();
-        path.push(format!("saml_rs_md_{}.xml", std::process::id()));
+        path.push(format!("risaml_md_{}.xml", std::process::id()));
         sp.export_metadata(&path)?;
         assert_eq!(std::fs::read_to_string(&path)?, sp.get_metadata());
         std::fs::remove_file(&path)?;

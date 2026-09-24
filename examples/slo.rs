@@ -1,6 +1,6 @@
 //! End-to-end typed Single Logout after a typed SSO session.
 //!
-//! Run with: `cargo run -p saml-rs --example slo`
+//! Run with: `cargo run -p risaml --example slo`
 //! (the `crypto-ribergshamra` feature is on by default).
 
 #[cfg(any(
@@ -9,7 +9,7 @@
     feature = "crypto-fips"
 ))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use saml_rs::{
+    use risaml::{
         AcsEndpoint, AuthnRequest, BrowserInput, CertificatePem, Credentials, EntityId, IdpConfig,
         IdpDescriptor, IdpValidationPolicy, LogoutRequest, LogoutResponse, MetadataTrustPolicy,
         NameId, PrivateKeyPem, ReplayPolicy, RespondSlo, RespondSso, Saml, SamlValidationContext,

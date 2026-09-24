@@ -43,8 +43,8 @@ impl MessageField {
 /// # Examples
 ///
 /// ```
-/// use saml_rs::{AuthnRequest, Outbound};
-/// # use saml_rs::raw::{Binding, BindingContext};
+/// use risaml::{AuthnRequest, Outbound};
+/// # use risaml::raw::{Binding, BindingContext};
 /// #
 /// # fn redirect_context() -> BindingContext {
 /// #     BindingContext {
@@ -76,7 +76,7 @@ impl MessageField {
 ///
 /// let post = Outbound::<AuthnRequest>::try_from(post_context())?;
 /// assert_eq!(post.post_form()?.action().as_str(), "https://idp.example.com/sso");
-/// # Ok::<(), saml_rs::SamlError>(())
+/// # Ok::<(), risaml::SamlError>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct Outbound<Message> {

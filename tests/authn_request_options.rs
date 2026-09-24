@@ -1,10 +1,10 @@
-use saml_rs::binding::{base64_decode, deflate_raw_decode};
-use saml_rs::constants::Binding;
-use saml_rs::entity::{BindingContext, EntitySetting};
-use saml_rs::flow::HttpRequest;
-use saml_rs::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
-use saml_rs::sp::LoginRequestOptions;
-use saml_rs::{IdentityProvider, SamlError, ServiceProvider};
+use risaml::binding::{base64_decode, deflate_raw_decode};
+use risaml::constants::Binding;
+use risaml::entity::{BindingContext, EntitySetting};
+use risaml::flow::HttpRequest;
+use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
+use risaml::sp::LoginRequestOptions;
+use risaml::{IdentityProvider, SamlError, ServiceProvider};
 use url::Url;
 
 fn idp_config(want_authn_requests_signed: bool) -> IdpMetadataConfig {
@@ -441,7 +441,7 @@ fn requested_response_binding_without_acs_returns_missing_metadata(
 ))]
 mod signed {
     use super::*;
-    use saml_rs::constants::signature_algorithm::RSA_SHA256;
+    use risaml::constants::signature_algorithm::RSA_SHA256;
 
     const PRIVKEY: &str = include_str!("fixtures/key/sp_privkey.pem");
     const CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");

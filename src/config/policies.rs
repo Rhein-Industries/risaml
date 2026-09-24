@@ -222,7 +222,7 @@ pub enum AssertionEncryptionPolicy {
 /// XML-Enc backend and deployment credentials.
 ///
 /// ```
-/// use saml_rs::{EntityId, IdpConfig, SsoEndpoint, XmlEncryptionPolicy, XmlPolicy};
+/// use risaml::{EntityId, IdpConfig, SsoEndpoint, XmlEncryptionPolicy, XmlPolicy};
 ///
 /// let xml = XmlPolicy {
 ///     encryption: XmlEncryptionPolicy::encrypt_assertions(),
@@ -232,7 +232,7 @@ pub enum AssertionEncryptionPolicy {
 ///     .sso_endpoint(SsoEndpoint::post("https://idp.example.com/sso")?)
 ///     .xml(xml);
 /// # let _ = idp_builder;
-/// # Ok::<(), saml_rs::SamlError>(())
+/// # Ok::<(), risaml::SamlError>(())
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct XmlEncryptionPolicy {
@@ -281,7 +281,7 @@ impl XmlEncryptionPolicy {
 /// that risk. AWS-LC and FIPS ignore this opt-in.
 ///
 /// ```
-/// use saml_rs::{AcsEndpoint, EntityId, SpConfig, XmlEncryptionPolicy, XmlPolicy};
+/// use risaml::{AcsEndpoint, EntityId, SpConfig, XmlEncryptionPolicy, XmlPolicy};
 ///
 /// let xml = XmlPolicy {
 ///     encryption: XmlEncryptionPolicy::default()
@@ -292,7 +292,7 @@ impl XmlEncryptionPolicy {
 ///     .acs_endpoint(AcsEndpoint::post("https://sp.example.com/acs")?)
 ///     .xml(xml);
 /// # let _ = sp_builder;
-/// # Ok::<(), saml_rs::SamlError>(())
+/// # Ok::<(), risaml::SamlError>(())
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct XmlPolicy {
