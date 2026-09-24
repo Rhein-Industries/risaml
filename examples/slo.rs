@@ -1,7 +1,7 @@
 //! End-to-end typed Single Logout after a typed SSO session.
 //!
 //! Run with: `cargo run -p saml-rs --example slo`
-//! (the `crypto-bergshamra` feature is on by default).
+//! (the `crypto-ribergshamra` feature is on by default).
 
 #[cfg(any(
     feature = "crypto-rustcrypto",
@@ -109,5 +109,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     feature = "crypto-fips"
 )))]
 fn main() {
-    eprintln!("Enable a crypto provider feature (`crypto-bergshamra` is on by default).");
+    eprintln!("Enable a crypto provider feature (`crypto-ribergshamra` is on by default).");
 }

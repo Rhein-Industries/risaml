@@ -4,7 +4,7 @@
     feature = "crypto-fips"
 ))]
 
-use bergshamra::{sign, DsigContext, KeysManager};
+use ribergshamra::{sign, DsigContext, KeysManager};
 use saml_rs::constants::signature_algorithm::RSA_SHA256;
 use saml_rs::constants::{digest_for_signature, namespace, transform_algorithm};
 use saml_rs::crypto::construct_saml_signature;

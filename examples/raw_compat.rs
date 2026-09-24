@@ -89,5 +89,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     feature = "crypto-fips"
 )))]
 fn main() {
-    eprintln!("Enable a crypto provider feature (`crypto-bergshamra` is on by default).");
+    eprintln!("Enable a crypto provider feature (`crypto-ribergshamra` is on by default).");
 }

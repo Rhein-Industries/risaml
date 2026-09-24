@@ -665,7 +665,7 @@ fn hardening_signed_metadata_verifies_against_trust_anchor(
 
 #[test]
 fn hardening_metadata_signature_requires_root_coverage() -> Result<(), Box<dyn std::error::Error>> {
-    use bergshamra::{sign, DsigContext, KeysManager};
+    use ribergshamra::{sign, DsigContext, KeysManager};
     use saml_rs::constants::{digest_for_signature, namespace, transform_algorithm};
     use saml_rs::crypto::keys::load_private_key;
     use saml_rs::crypto::verify_metadata_signature;

@@ -255,7 +255,7 @@
 //! # Unsupported profiles
 //!
 //! The high-level [`Saml`] API focuses on browser Web SSO, metadata-driven SP/IdP
-//! setup, XML signature/encryption through `bergshamra`, and Single Logout. It
+//! setup, XML signature/encryption through `ribergshamra`, and Single Logout. It
 //! does not yet implement Artifact resolution, SOAP/back-channel profiles,
 //! ECP/PAOS, SAML query protocols, NameID management, or metadata federation. If
 //! you need one of those profiles for a real interoperability target, please
@@ -263,11 +263,12 @@
 //! expected flow so we can consider the implementation.
 //!
 //! XML cryptography (XML-DSig sign/verify with anti-wrapping, XML-Enc, detached
-//! message signatures) is delegated to `bergshamra`. The default
-//! `crypto-bergshamra` compatibility feature selects RustCrypto; applications
-//! can instead select `crypto-aws-lc` or `crypto-fips` with default features
-//! disabled. Configure assertion encryption and XML-Enc compatibility exceptions
-//! through [`XmlEncryptionPolicy`].
+//! message signatures) is delegated to `ribergshamra`. The default
+//! `crypto-ribergshamra` feature (also available under its compatibility alias
+//! `crypto-bergshamra`) selects RustCrypto; applications can instead select
+//! `crypto-aws-lc` or `crypto-fips` with default features disabled. Configure
+//! assertion encryption and XML-Enc compatibility exceptions through
+//! [`XmlEncryptionPolicy`].
 //! Disable default features to build the crypto-free protocol layer; crypto
 //! operations then fail closed with [`SamlError::Unsupported`].
 

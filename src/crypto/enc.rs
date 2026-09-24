@@ -1,5 +1,5 @@
 //! Assertion encryption/decryption, delegating XML-Enc to the selected
-//! `bergshamra` provider.
+//! `ribergshamra` provider.
 
 use super::keys::load_certificate;
 use super::xml_syntax::validate_crypto_xml_prefix;
@@ -7,8 +7,8 @@ use crate::binding::xml_escape;
 use crate::constants::namespace;
 use crate::error::SamlError;
 use crate::xml::dom::{self, Node, XmlLimits};
-use bergshamra::keys::Key;
-use bergshamra::{decrypt, encrypt, EncContext, KeysManager};
+use ribergshamra::keys::Key;
+use ribergshamra::{decrypt, encrypt, EncContext, KeysManager};
 
 const ENC: &str = "http://www.w3.org/2001/04/xmlenc#";
 const SOFTWARE_RSA_DECRYPTION_DISABLED: &str = "XML-Enc RSA key-transport decryption with software private keys is disabled by default because the bundled RustCrypto rsa backend is affected by RUSTSEC-2023-0071. Enable allow_insecure_software_rsa_key_transport_decryption only as an explicit compatibility exception.";
@@ -126,7 +126,7 @@ pub fn decrypt_assertion_with_limits(
     let doc = dom::parse_with_limits(xml, limits)?;
     let encrypted = child(&doc.root, "EncryptedAssertion")
         .ok_or_else(|| SamlError::Crypto("ERR_UNDEFINED_ENCRYPTED_ASSERTION".into()))?;
-    // bergshamra::decrypt returns the input doc with <EncryptedData> replaced by
+    // ribergshamra::decrypt returns the input doc with <EncryptedData> replaced by
     // the plaintext element, so pass only the inner EncryptedData to recover the
     // bare <Assertion>, then drop the EncryptedAssertion wrapper.
     let encrypted_data = child(encrypted, "EncryptedData")

@@ -33,7 +33,7 @@ members = [
 
 [package.metadata.docs.rs]
 no-default-features = true
-features = ["crypto-bergshamra"]
+features = ["crypto-ribergshamra"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [lib]
@@ -41,19 +41,24 @@ name = "saml_rs"
 path = "src/lib.rs"
 
 [features]
-default = ["crypto-bergshamra"]
-crypto-bergshamra = [
+default = ["crypto-ribergshamra"]
+# RustCrypto provider plus ribergshamra's historical optional capabilities
+# (legacy algorithms, post-quantum signatures and PKCS#11).
+crypto-ribergshamra = [
     "crypto-rustcrypto",
     "crypto-legacy-algorithms",
     "crypto-post-quantum",
     "crypto-pkcs11",
 ]
-crypto-rustcrypto = ["dep:bergshamra", "bergshamra/rustcrypto"]
-crypto-aws-lc = ["dep:bergshamra", "bergshamra/aws-lc"]
-crypto-fips = ["dep:bergshamra", "bergshamra/fips"]
-crypto-legacy-algorithms = ["bergshamra?/legacy-algorithms"]
-crypto-post-quantum = ["bergshamra?/post-quantum"]
-crypto-pkcs11 = ["bergshamra?/pkcs11"]
+# Compatibility alias for `crypto-ribergshamra`, kept so that feature
+# selections written for the bergshamra-based releases keep working.
+crypto-bergshamra = ["crypto-ribergshamra"]
+crypto-rustcrypto = ["dep:ribergshamra", "ribergshamra/rustcrypto"]
+crypto-aws-lc = ["dep:ribergshamra", "ribergshamra/aws-lc"]
+crypto-fips = ["dep:ribergshamra", "ribergshamra/fips"]
+crypto-legacy-algorithms = ["ribergshamra?/legacy-algorithms"]
+crypto-post-quantum = ["ribergshamra?/post-quantum"]
+crypto-pkcs11 = ["ribergshamra?/pkcs11"]
 
 [dependencies]
 base64 = "0.23"
@@ -63,7 +68,9 @@ thiserror = "2"
 time = { version = "0.3", default-features = false, features = ["std", "parsing"] }
 url = "2"
 uuid = { version = "1", default-features = false, features = ["v4"] }
-bergshamra = { version = "0.8.0", optional = true, default-features = false }
+# ribergshamra is Rhein Industries' maintained fork of bergshamra (XML-DSig,
+# XML-Enc, C14N), built on riptering and ritsp-ltv.
+ribergshamra = { version = "0.10", optional = true, default-features = false }
 
 [lints.rust]
 unsafe_code = "forbid"

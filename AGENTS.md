@@ -10,9 +10,9 @@ work in the repo, not restate the README.
   validation, logout, and crypto-adapter changes there.
 - `tests/` contains integration tests and committed fixtures.
 - `examples/` contains runnable examples.
-- XML cryptography is delegated to `bergshamra` behind the default
-  `crypto-bergshamra` feature. Do not add in-tree XML-DSig/XML-Enc
-  implementations.
+- XML cryptography is delegated to `ribergshamra` behind the default
+  `crypto-ribergshamra` feature (`crypto-bergshamra` is a compatibility
+  alias). Do not add in-tree XML-DSig/XML-Enc implementations.
 - The package forbids unsafe code.
 
 ## Working Rules

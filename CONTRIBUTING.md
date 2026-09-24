@@ -10,8 +10,9 @@ cargo install --locked cargo-nextest
 ```
 
 All published workspace packages require Rust 1.88. The default
-`crypto-bergshamra` feature uses `bergshamra` 0.8.0 with `kryptering` 0.5 and
-preserves the RustCrypto-backed defaults.
+`crypto-ribergshamra` feature (compatibility alias `crypto-bergshamra`) uses
+`ribergshamra` 0.10 with `riptering` 0.6 and preserves the RustCrypto-backed
+defaults.
 
 ## Tests
 
@@ -44,8 +45,8 @@ When adding or changing SAML behavior:
    evidence.
 2. Write a focused Rust test.
 3. Implement an idiomatic Rust equivalent with explicit errors.
-4. Keep XML cryptography (XML-DSig, XML-Enc, C14N) delegated to `bergshamra`
-   behind the optional `crypto-bergshamra` feature.
+4. Keep XML cryptography (XML-DSig, XML-Enc, C14N) delegated to
+   `ribergshamra` behind the optional `crypto-ribergshamra` feature.
 
 Propose new dependencies before adding them, and keep optional integrations
 behind feature flags. Do not commit generated or vendor trees.

@@ -2,8 +2,8 @@
 
 This project is experimental. It implements SAML 2.0 **Service Provider** and
 **Identity Provider** flows, and XML cryptography (signature verification,
-encryption, C14N) is delegated to `bergshamra` behind the default
-`crypto-bergshamra` feature. Do not use `saml-rs` for production
+encryption, C14N) is delegated to `ribergshamra` behind the default
+`crypto-ribergshamra` feature. Do not use `saml-rs` for production
 authentication until it is explicitly documented as stable.
 
 ## Reporting a Vulnerability

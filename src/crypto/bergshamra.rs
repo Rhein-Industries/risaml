@@ -1,9 +1,9 @@
-//! `bergshamra`-backed XML security for the selected provider feature.
+//! `ribergshamra`-backed XML security for the selected provider feature.
 
 use crate::crypto::backend::XmlSecurityBackend;
 use crate::error::SamlError;
 
-/// [`XmlSecurityBackend`] implementation backed by the `bergshamra` crate.
+/// [`XmlSecurityBackend`] implementation backed by the `ribergshamra` crate.
 ///
 /// Verifies enveloped XML-DSig signatures against a metadata certificate using
 /// `trusted_keys_only` + `strict_verification` (see [`crate::crypto::verify`]).

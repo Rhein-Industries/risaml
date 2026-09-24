@@ -21,8 +21,10 @@ updates:
       cargo-xml-crypto:
         applies-to: version-updates
         patterns:
-          - "bergshamra*"
-          - "kryptering"
+          - "ribergshamra*"
+          - "riptering"
+          - "ritsp-ltv"
+          - "uppsala"
           - "rsa"
           - "crypto-bigint"
           - "x509-cert"
@@ -35,8 +37,10 @@ updates:
           - "*"
         exclude-patterns:
           - "quick-xml"
-          - "bergshamra*"
-          - "kryptering"
+          - "ribergshamra*"
+          - "riptering"
+          - "ritsp-ltv"
+          - "uppsala"
           - "rsa"
           - "crypto-bigint"
           - "x509-cert"

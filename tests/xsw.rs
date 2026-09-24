@@ -7,7 +7,7 @@
 ))]
 #![allow(clippy::unwrap_used)]
 
-use bergshamra::{sign, DsigContext, KeysManager};
+use ribergshamra::{sign, DsigContext, KeysManager};
 use saml_rs::binding::base64_encode;
 use saml_rs::constants::signature_algorithm::RSA_SHA256;
 use saml_rs::constants::{digest_for_signature, namespace, transform_algorithm};

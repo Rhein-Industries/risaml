@@ -1,10 +1,10 @@
 //! XML-DSig verification and anti-wrapping checks, delegating cryptography to
-//! the selected `bergshamra` provider.
+//! the selected `ribergshamra` provider.
 //!
 //! Security model:
 //! - `trusted_keys_only`: the signature is verified against the certificate(s)
 //!   declared in IdP metadata, never an attacker-supplied inline cert.
-//! - `strict_verification`: bergshamra enforces that each signed reference
+//! - `strict_verification`: ribergshamra enforces that each signed reference
 //!   targets the document element, an ancestor, or a sibling of the Signature.
 //! - Explicit XSW guard: reject any `Assertion`/`Signature` nested under
 //!   `SubjectConfirmationData`.
@@ -15,7 +15,7 @@ use crate::constants::transform_algorithm;
 use crate::error::{ReferenceResolutionReason, SamlError, SignatureVerificationReason};
 use crate::util::normalize_cert_string;
 use crate::xml::dom::{self, Node, XmlLimits};
-use bergshamra::{verify, verify_all, DsigContext, KeysManager, VerifiedReference, VerifyResult};
+use ribergshamra::{verify, verify_all, DsigContext, KeysManager, VerifiedReference, VerifyResult};
 use std::collections::HashSet;
 
 fn children_named<'a>(node: &'a Node, name: &str) -> Vec<&'a Node> {
@@ -417,7 +417,8 @@ pub fn verify_signature_with_limits(
         have_key = true;
         let mut manager = KeysManager::new();
         manager.add_key(key);
-        // Trust model (audited against bergshamra 0.8.0):
+        // Trust model (audited against bergshamra 0.8.0; the `DsigContext`
+        // fields, defaults and builders are unchanged in ribergshamra 0.10.0):
         // - Metadata certificates are pinned key material, not a public CA
         //   chain. Verification uses only the metadata-pinned key; inline
         //   KeyInfo (X509Certificate/KeyValue) is never imported as key
@@ -429,7 +430,7 @@ pub fn verify_signature_with_limits(
         //   document element, an ancestor, or a sibling of the Signature (XSW
         //   guard); the surrounding preflight and result checks reject
         //   external or unresolved SAML references.
-        // - `with_insecure(true)`: intentionally skips Bergshamra's X.509
+        // - `with_insecure(true)`: intentionally skips ribergshamra's X.509
         //   certificate validation (chain/trust/time), which is irrelevant to
         //   our leaf-key pinning model. `trusted_keys_only` still confines
         //   verification to metadata-pinned keys, and this setting does not
@@ -718,7 +719,7 @@ mod tests {
     use crate::crypto::keys::load_private_key;
     use crate::util::normalize_cert_string;
     use crate::xml::{extract, ExtractorField};
-    use bergshamra::sign;
+    use ribergshamra::sign;
 
     #[test]
     fn external_reference_detection() {

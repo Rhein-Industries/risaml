@@ -30,7 +30,7 @@ new typed API becomes the recommended path.
 - Make illegal SAML Web SSO binding combinations unrepresentable in typed API.
 - Make request correlation, RelayState, clock, replay, and metadata trust
   visible in function signatures.
-- Keep XML security delegated to `bergshamra`; do not add in-tree XML-DSig,
+- Keep XML security delegated to `ribergshamra`; do not add in-tree XML-DSig,
   canonicalization, or XML-Enc implementations.
 - Keep unsupported profiles out of the high-level typed API for now: Artifact
   resolution, SOAP/back-channel profiles, ECP/PAOS, SAML queries, NameID

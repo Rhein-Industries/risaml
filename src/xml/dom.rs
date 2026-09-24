@@ -2,7 +2,7 @@
 //!
 //! Nodes carry their source byte span so the extractor can return the exact
 //! original substring for `context` fields (avoiding any re-serialisation /
-//! canonicalisation concerns — verification is delegated to bergshamra).
+//! canonicalisation concerns — verification is delegated to ribergshamra).
 
 use crate::error::SamlError;
 use quick_xml::escape::resolve_predefined_entity;

@@ -1,6 +1,6 @@
 //! Historical regression cases derived from npm `samlify` flow tests.
 //!
-//! Upstream uses IdP/SP private keys whose PEM format `bergshamra` cannot
+//! Upstream uses IdP/SP private keys whose PEM format `ribergshamra` cannot
 //! auto-detect, so entities are built from config with the project's working
 //! RSA keypair. Redirect/SimpleSign responses are parsed by reconstructing the
 //! signed octet string the way the bindings produce it.

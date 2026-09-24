@@ -1,11 +1,11 @@
-//! Key, certificate and KeyInfo helpers backed by the selected `bergshamra`
+//! Key, certificate and KeyInfo helpers backed by the selected `ribergshamra`
 //! provider.
 
 use crate::error::SamlError;
 use crate::util::normalize_cert_string;
-use bergshamra::keys::keyinfo::build_x509_key_info;
-use bergshamra::keys::loader::{load_pem_auto, load_x509_cert_pem};
-use bergshamra::keys::Key;
+use ribergshamra::keys::keyinfo::build_x509_key_info;
+use ribergshamra::keys::loader::{load_pem_auto, load_x509_cert_pem};
+use ribergshamra::keys::Key;
 
 fn crypto_err(err: impl std::fmt::Display) -> SamlError {
     SamlError::Crypto(err.to_string())

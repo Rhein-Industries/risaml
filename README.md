@@ -8,9 +8,12 @@
 **Pure-Rust SAML 2.0** Service Provider and Identity Provider support. The
 protocol layer uses Rust XML parsing and does not require `libxml2`, `xmlsec1`,
 or an OpenSSL build chain. XML cryptography (XML-DSig, XML-Enc, C14N, detached
-message signatures) is delegated to [`bergshamra`](https://crates.io/crates/bergshamra).
-The default `crypto-bergshamra` compatibility feature selects RustCrypto and
-preserves the historical optional algorithm and PKCS#11 capabilities.
+message signatures) is delegated to
+[`ribergshamra`](https://github.com/Rhein-Industries/ribergshamra), Rhein
+Industries' maintained fork of bergshamra, on the
+[`riptering`](https://github.com/Rhein-Industries/riptering) crypto providers.
+The default `crypto-ribergshamra` feature selects RustCrypto and preserves the
+historical optional algorithm and PKCS#11 capabilities.
 
 ```toml
 [dependencies]
@@ -41,7 +44,7 @@ security stack in their build and deployment environment.
 | Bindings | HTTP-POST, HTTP-Redirect, HTTP-POST-SimpleSign |
 | Metadata | Parse and generate SP/IdP metadata; verify signed metadata |
 | Single Logout | Create and parse `LogoutRequest` / `LogoutResponse` |
-| Crypto | XML-DSig, XML-Enc, detached signatures via `bergshamra` |
+| Crypto | XML-DSig, XML-Enc, detached signatures via `ribergshamra` |
 | Hardening | Request correlation, audience/destination/issuer checks, XSW guards, bounded parsing |
 | Unsafe code | `#![forbid(unsafe_code)]` |
 
@@ -64,7 +67,7 @@ Rust-only and delegates XML crypto to a Rust crate.
 ### Unsupported SAML profiles
 
 The high-level `Saml` API currently focuses on browser Web SSO, metadata-driven
-SP/IdP setup, XML signature/encryption through `bergshamra`, and Single Logout.
+SP/IdP setup, XML signature/encryption through `ribergshamra`, and Single Logout.
 It does not yet implement Artifact resolution, SOAP/back-channel profiles,
 ECP/PAOS, SAML query protocols, NameID management, or metadata federation. If
 you need one of those profiles for a real interoperability target, please open
@@ -190,17 +193,26 @@ reaching for hidden lower-level module paths.
 
 ```toml
 [features]
-default = ["crypto-bergshamra"]
-crypto-bergshamra = [
+default = ["crypto-ribergshamra"]
+crypto-ribergshamra = [
     "crypto-rustcrypto",
     "crypto-legacy-algorithms",
     "crypto-post-quantum",
     "crypto-pkcs11",
 ]
-crypto-rustcrypto = ["dep:bergshamra", "bergshamra/rustcrypto"]
-crypto-aws-lc = ["dep:bergshamra", "bergshamra/aws-lc"]
-crypto-fips = ["dep:bergshamra", "bergshamra/fips"]
+crypto-bergshamra = ["crypto-ribergshamra"]  # compatibility alias
+crypto-rustcrypto = ["dep:ribergshamra", "ribergshamra/rustcrypto"]
+crypto-aws-lc = ["dep:ribergshamra", "ribergshamra/aws-lc"]
+crypto-fips = ["dep:ribergshamra", "ribergshamra/fips"]
+crypto-legacy-algorithms = ["ribergshamra?/legacy-algorithms"]
+crypto-post-quantum = ["ribergshamra?/post-quantum"]
+crypto-pkcs11 = ["ribergshamra?/pkcs11"]
 ```
+
+`crypto-bergshamra` is a compatibility alias for `crypto-ribergshamra`, kept so
+that feature selections written for the bergshamra-based releases keep
+working. New configurations should name `crypto-ribergshamra` or select a
+provider directly.
 
 With `default-features = false`, the protocol layer still builds messages,
 parses metadata, and runs extraction. Operations that need signing,
@@ -212,14 +224,14 @@ are rejected at compile time. Disable default features before selecting AWS-LC
 or FIPS. The compatibility packages forward the same feature names.
 
 `crypto-legacy-algorithms`, `crypto-post-quantum`, and `crypto-pkcs11` forward
-those Bergshamra capabilities without selecting a provider. The default
-`crypto-bergshamra` alias enables them with RustCrypto to preserve existing
+those ribergshamra capabilities without selecting a provider. The default
+`crypto-ribergshamra` feature enables them with RustCrypto to preserve existing
 behavior; direct provider selection starts with only that provider's baseline.
 
-Bergshamra supports AWS-LC and FIPS on Linux x86_64/aarch64. The `saml-rs`
+ribergshamra supports AWS-LC and FIPS on Linux x86_64/aarch64. The `saml-rs`
 provider matrix currently validates Linux x86_64; Linux aarch64 is an upstream
 capability that this repository does not exercise in CI. `saml-rs` initializes
-Bergshamra before its first crypto operation. Applications can fail early and
+ribergshamra before its first crypto operation. Applications can fail early and
 inspect the result during startup:
 
 ```rust
@@ -235,15 +247,15 @@ fail-closed and map to `SamlError::Crypto`. `crypto-fips` means that the selecte
 AWS-LC provider actively attested FIPS mode; it does not claim that a consuming
 binary or deployment is FIPS certified. FIPS policy rejects algorithms outside
 its approved set, including the currently exposed SHA-1-based
-`RSA_OAEP_MGF1P` XML-Enc key transport. Bergshamra's AWS-LC providers reject
+`RSA_OAEP_MGF1P` XML-Enc key transport. ribergshamra's AWS-LC providers reject
 signing with `RSA_SHA1`. The FIPS provider also rejects verifying `RSA_SHA1`;
 non-FIPS AWS-LC still verifies inbound RSA-SHA1 Redirect and XML-DSig
 signatures. AWS-LC has a narrower capability set than RustCrypto; consult
-Bergshamra's
-[provider-capability documentation](https://github.com/kushaldas/bergshamra/blob/v0.8.0/docs/provider-capabilities.md)
+ribergshamra's
+[provider-capability documentation](https://github.com/Rhein-Industries/ribergshamra/blob/main/docs/provider-capabilities.md)
 before enabling custom algorithm URIs.
 
-With `crypto-bergshamra` enabled:
+With `crypto-ribergshamra` enabled:
 
 - XML signatures can be verified against metadata-declared keys.
 - Signed-reference placement checks help mitigate XML Signature Wrapping (XSW).
@@ -273,7 +285,7 @@ Security-sensitive defaults and checks include:
   flow parser.
 - HTTP-Redirect raw DEFLATE output limits.
 - XML-Enc software RSA key-transport decryption disabled by default on
-  RustCrypto because that backend, reached through `bergshamra` / `kryptering`,
+  RustCrypto because that backend, reached through `ribergshamra` / `riptering`,
   is affected by RUSTSEC-2023-0071. AWS-LC and FIPS do not apply this gate.
 
 Schema validation is optional defense in depth via

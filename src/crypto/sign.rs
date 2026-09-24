@@ -1,5 +1,5 @@
 //! XML-DSig signing and detached message signatures, delegating crypto to the
-//! selected `bergshamra` provider.
+//! selected `ribergshamra` provider.
 
 use super::keys::load_certificate;
 use super::xml_syntax::validate_crypto_xml_prefix;
@@ -9,8 +9,8 @@ use crate::entity::{SignatureAction, SignatureConfig};
 use crate::error::SamlError;
 use crate::util::normalize_cert_string;
 use crate::xml::dom::{self, Node};
-use bergshamra::keys::Key;
-use bergshamra::{sign, DsigContext, KeysManager};
+use ribergshamra::keys::Key;
+use ribergshamra::{sign, DsigContext, KeysManager};
 
 fn crypto_err(err: impl std::fmt::Display) -> SamlError {
     SamlError::Crypto(err.to_string())
@@ -84,7 +84,7 @@ fn insert_position(xml: &str, node: &Node, action: SignatureAction) -> usize {
 /// When `sign_message` the whole root is referenced; otherwise the contained
 /// `<Assertion>` is referenced. `config` customizes the element prefix and
 /// placement; by default the `<Signature>` is inserted right after the target's
-/// `<Issuer>`. bergshamra then fills the digest and signature value. Returns
+/// `<Issuer>`. ribergshamra then fills the digest and signature value. Returns
 /// the signed XML.
 pub fn construct_saml_signature(
     xml: &str,
@@ -172,7 +172,7 @@ pub fn construct_message_signature(
 ) -> Result<String, SamlError> {
     super::provider::ensure_crypto_provider_initialized()?;
     let signing = require_operation_key(key.to_signing_key(), "no signing key")?;
-    let alg = bergshamra::crypto::sign::from_uri(sig_alg).map_err(crypto_err)?;
+    let alg = ribergshamra::crypto::sign::from_uri(sig_alg).map_err(crypto_err)?;
     let signature = alg
         .sign(&signing, octet_string.as_bytes())
         .map_err(crypto_err)?;
@@ -188,7 +188,7 @@ pub fn verify_message_signature(
 ) -> Result<bool, SamlError> {
     let key = load_certificate(cert)?;
     let verifying = require_operation_key(key.to_signing_key(), "no verification key")?;
-    let alg = bergshamra::crypto::sign::from_uri(sig_alg).map_err(crypto_err)?;
+    let alg = ribergshamra::crypto::sign::from_uri(sig_alg).map_err(crypto_err)?;
     let signature = base64_decode(signature_b64)?;
     alg.verify(&verifying, octet_string.as_bytes(), &signature)
         .map_err(crypto_err)

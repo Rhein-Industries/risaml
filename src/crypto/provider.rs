@@ -1,4 +1,4 @@
-//! Bergshamra document-crypto provider initialization and attestation.
+//! ribergshamra document-crypto provider initialization and attestation.
 
 use std::fmt;
 
@@ -57,15 +57,15 @@ impl CryptoProviderInfo {
     }
 }
 
-fn provider_info(info: bergshamra::BackendInfo) -> CryptoProviderInfo {
+fn provider_info(info: ribergshamra::BackendInfo) -> CryptoProviderInfo {
     let provider = match info.document {
-        bergshamra::BackendId::RustCrypto => CryptoProvider::RustCrypto,
-        bergshamra::BackendId::AwsLc => CryptoProvider::AwsLc,
+        ribergshamra::BackendId::RustCrypto => CryptoProvider::RustCrypto,
+        ribergshamra::BackendId::AwsLc => CryptoProvider::AwsLc,
     };
     let fips = match info.fips {
-        bergshamra::FipsStatus::Disabled => CryptoFipsStatus::Disabled,
-        bergshamra::FipsStatus::Uninitialized => CryptoFipsStatus::Uninitialized,
-        bergshamra::FipsStatus::Active => CryptoFipsStatus::Active,
+        ribergshamra::FipsStatus::Disabled => CryptoFipsStatus::Disabled,
+        ribergshamra::FipsStatus::Uninitialized => CryptoFipsStatus::Uninitialized,
+        ribergshamra::FipsStatus::Active => CryptoFipsStatus::Active,
     };
     CryptoProviderInfo { provider, fips }
 }
@@ -81,9 +81,9 @@ fn provider_error(action: &str, error: impl fmt::Display) -> SamlError {
 ///
 /// # Errors
 ///
-/// Returns [`SamlError::Crypto`] if Bergshamra cannot report provider state.
+/// Returns [`SamlError::Crypto`] if ribergshamra cannot report provider state.
 pub fn crypto_provider_info() -> Result<CryptoProviderInfo, SamlError> {
-    bergshamra::backend_info()
+    ribergshamra::backend_info()
         .map(provider_info)
         .map_err(|error| provider_error("inspection", error))
 }
@@ -92,7 +92,7 @@ pub fn crypto_provider_info() -> Result<CryptoProviderInfo, SamlError> {
 ///
 /// Initialization is idempotent and its first result is retained for the
 /// process lifetime. `saml-rs` calls this automatically before its first
-/// Bergshamra operation; applications may call it during startup to fail
+/// ribergshamra operation; applications may call it during startup to fail
 /// early and inspect FIPS attestation before accepting traffic.
 ///
 /// # Errors
@@ -100,7 +100,7 @@ pub fn crypto_provider_info() -> Result<CryptoProviderInfo, SamlError> {
 /// Returns [`SamlError::Crypto`] when provider initialization or FIPS
 /// attestation fails.
 pub fn initialize_crypto_provider() -> Result<CryptoProviderInfo, SamlError> {
-    bergshamra::initialize_backend()
+    ribergshamra::initialize_backend()
         .map(provider_info)
         .map_err(|error| provider_error("initialization", error))
 }

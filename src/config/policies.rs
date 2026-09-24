@@ -275,8 +275,8 @@ impl XmlEncryptionPolicy {
 /// # Examples
 ///
 /// Software RSA key-transport decryption is disabled by default on the
-/// RustCrypto provider because that backend, reached through `bergshamra` /
-/// `kryptering`, is affected by `RUSTSEC-2023-0071`. Enable it only as an
+/// RustCrypto provider because that backend, reached through `ribergshamra` /
+/// `riptering`, is affected by `RUSTSEC-2023-0071`. Enable it only as an
 /// explicit compatibility exception for a RustCrypto deployment that accepts
 /// that risk. AWS-LC and FIPS ignore this opt-in.
 ///
