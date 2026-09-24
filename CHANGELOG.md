@@ -10,9 +10,9 @@ Versioning while the API is still pre-1.0.
 
 ## Unreleased
 
-## 0.6.0 — first risaml release
+## 0.6.0 — first risaml release — 2026-09-24
 
-Not yet published to crates.io. Changes relative to saml-rs 0.5.0 (upstream
+Changes relative to saml-rs 0.5.0 (upstream
 tag `v0.5.0`, commit `9302371`):
 
 ### Changed
