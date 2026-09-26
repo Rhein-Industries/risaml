@@ -3,7 +3,7 @@
 # see README.md and LICENSE.
 [package]
 name = "risaml"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 rust-version = "1.88"
 authors = ["Sebastian Sala (original saml-rs author)", "Rhein Industries"]
@@ -25,6 +25,9 @@ include = [
     "/README.md",
     "/LICENSE",
     "/CHANGELOG.md",
+    "/SECURITY.md",
+    "/clippy.toml",
+    "/rustfmt.toml",
 ]
 
 [workspace]
@@ -72,7 +75,7 @@ url = "2"
 uuid = { version = "1", default-features = false, features = ["v4"] }
 # ribergshamra is Rhein Industries' maintained fork of bergshamra (XML-DSig,
 # XML-Enc, C14N), built on riptering and ritsp-ltv.
-ribergshamra = { version = "0.10", optional = true, default-features = false }
+ribergshamra = { version = "0.11.0", optional = true, default-features = false }
 
 [lints.rust]
 unsafe_code = "forbid"

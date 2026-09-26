@@ -8,7 +8,15 @@ risaml was forked from, is kept unchanged below.
 The format is based on Keep a Changelog, and this project follows Semantic
 Versioning while the API is still pre-1.0.
 
-## Unreleased
+## 0.7.0 — 2026-09-26
+
+### Changed
+
+- **Breaking:** require ribergshamra 0.11.0 on riptering 0.7 and ritsp-ltv 0.6.
+  Consumers that name XML security types directly must update their matching
+  dependencies. The MSRV remains Rust 1.88. The release intentionally tightens
+  security acceptance and the software RSA decryption default; see the
+  [0.6 to 0.7 migration guide](docs/migrations/0.6-to-0.7.md).
 
 ### Fixed
 
@@ -53,6 +61,14 @@ Versioning while the API is still pre-1.0.
   requested first metadata certificate.
 - Add a local fixture microbenchmark example for XML parsing and cloning,
   field extraction, binding encoding/decoding, and metadata certificate lookup.
+
+### Validation and packaging
+
+- Run complete default, explicit software RSA exception and crypto-free suites
+  on Linux, Windows and macOS, plus Linux RustCrypto, AWS-LC and FIPS provider
+  suites. CI and dependency-policy checks use the published, locked graph.
+- Include the linked security policy, migration guidance and formatter/Clippy
+  configuration in the crate, alongside the existing license and test fixtures.
 
 ## 0.6.0 — first risaml release — 2026-09-24
 

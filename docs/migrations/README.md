@@ -13,6 +13,7 @@ release.
 - [`0.3` to `0.4`](0.3-to-0.4.md)
 - [`0.4` to `0.5`](0.4-to-0.5.md)
 - [saml-rs `0.5` to risaml `0.6`](0.5-to-0.6.md)
+- [risaml `0.6` to `0.7`](0.6-to-0.7.md)
 
 ## Adding a guide
 

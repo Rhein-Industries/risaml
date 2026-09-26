@@ -1,17 +1,14 @@
-# Coordinated review validation
+# Release validation
 
-The security review spans riptering, ritsp-ltv, ribergshamra and risaml. Draft
-PR CI tests immutable sibling commits from `.github/coordinated-stack.json`.
-The setup script fetches and verifies those SHAs, applies Cargo path overrides
-only on the ephemeral runner, explicitly selects the pinned package versions,
-and rejects unrelated dependency version changes. Subsequent commands use
-`--locked`. Production manifests and the committed registry lockfile remain
-unchanged by the setup script.
+CI builds the published crates.io dependency graph from `Cargo.toml` and the
+committed registry `Cargo.lock`, with `--locked` on build and test commands.
+There are no sibling checkouts, path overrides or temporary source pins. The
+manifest requires ribergshamra 0.11.0 or a compatible patch release, on the
+matching riptering and ritsp-ltv release lines.
 
-Dependency-policy checks run cargo-deny on the host after the same verified
-setup, so all provider audits inspect the coordinated source graph. The audit
-retains the existing advisory, license, ban and source policies; it does not
-add exceptions for the review overrides.
+Dependency-policy checks run cargo-deny on the host with the same committed
+registry lockfile, so all provider audits inspect the graph used by the test
+jobs. The audit retains its advisory, license, ban and source policies.
 
 Native Linux, Windows and macOS run complete default, explicit RSA opt-in and
 crypto-free suites. Linux also runs full RustCrypto, AWS-LC and FIPS provider
@@ -21,9 +18,12 @@ do not constitute FIPS certification or physical HSM validation. Provider
 capability tests retain RustCrypto success cases and assert documented
 unsupported behavior under AWS-LC/FIPS rather than hiding those cases.
 
-Merge and release from the dependency layer upward: riptering, ritsp-ltv, the
-ribergshamra workspace in crate dependency order, then risaml. Downstream PRs
-must update published minimum dependency versions and registry lockfiles and
-remove the temporary CI pins before their final merge. Passing coordinated
-source CI does not establish that published or deployed consumers have the
-fixes. These workflows do not publish crates or merge PRs.
+Publish riptering, ritsp-ltv and the ribergshamra workspace in crate dependency
+order before refreshing the risaml registry lockfile. The release commit must
+pass native CI against that graph before merging and publishing risaml. Validate
+the package with `cargo publish -p risaml --locked --dry-run` from a clean
+checkout and Cargo configuration without local patches, and review
+`cargo package -p risaml --list --locked` for license, documentation and fixture
+coverage. Do not use `--allow-dirty` for release validation. These workflows do
+not publish crates or merge PRs; successful CI does not establish that deployed
+consumers upgraded.

@@ -7,8 +7,6 @@ on:
       - "Cargo.lock"
       - "deny.toml"
       - ".github/workflows/audit.yml"
-      - ".github/coordinated-stack.json"
-      - ".github/scripts/setup-coordinated-stack.py"
   push:
     branches:
       - main
@@ -17,8 +15,6 @@ on:
       - "Cargo.lock"
       - "deny.toml"
       - ".github/workflows/audit.yml"
-      - ".github/coordinated-stack.json"
-      - ".github/scripts/setup-coordinated-stack.py"
   schedule:
     - cron: "0 2 * * *"
   workflow_dispatch:
@@ -45,10 +41,7 @@ jobs:
         with:
           tool: cargo-deny@0.20.2
           fallback: none
-      # Run on the host so cargo-deny sees the same verified path patches and
-      # pinned dependency graph as the compilation/test jobs.
-      - name: Resolve pinned sibling review commits
-        run: python .github/scripts/setup-coordinated-stack.py
+      # Audit the same published registry graph as the compilation/test jobs.
       - name: Check RustCrypto dependency policy
         run: cargo deny --locked --no-default-features --features crypto-rustcrypto,crypto-legacy-algorithms,crypto-post-quantum,crypto-pkcs11 check
       - name: Check AWS-LC dependency policy

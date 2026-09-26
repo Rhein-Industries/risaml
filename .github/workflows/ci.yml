@@ -50,10 +50,7 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - name: Resolve pinned sibling review commits
-        shell: bash
-        run: python .github/scripts/setup-coordinated-stack.py
-      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo clippy --workspace --locked --all-targets -- -D warnings
 
   feature-check:
     name: Crypto-free (${{ matrix.os }})
@@ -70,9 +67,6 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - name: Resolve pinned sibling review commits
-        shell: bash
-        run: python .github/scripts/setup-coordinated-stack.py
       - run: cargo check -p risaml --locked --no-default-features
       - run: cargo clippy -p risaml --locked --all-targets --no-default-features -- -D warnings
       - name: Run all crypto-free unit, integration and documentation tests
@@ -117,12 +111,9 @@ jobs:
       # The nextest action ref publishes immutable generated commits outside
       # the repository's default-branch history.
       - uses: taiki-e/install-action@cfdc41eb4dcb5a6d098e06c87a1e91076b799307 # zizmor: ignore[impostor-commit,ref-version-mismatch]
-      - name: Resolve pinned sibling review commits
-        shell: bash
-        run: python .github/scripts/setup-coordinated-stack.py
       - run: cargo check --workspace --locked --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
       - run: cargo clippy --workspace --locked --all-targets --no-default-features --features "$CRYPTO_PROVIDER_FEATURES" -- -D warnings
-      - run: RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p risaml --lib --no-deps --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
+      - run: RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p risaml --locked --lib --no-deps --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
       - name: Run all provider unit and integration tests
         run: >-
           cargo nextest run -p risaml --locked --no-fail-fast
@@ -144,16 +135,8 @@ jobs:
           toolchain: 1.88.0
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - uses: taiki-e/install-action@cfdc41eb4dcb5a6d098e06c87a1e91076b799307 # nextest
-      - name: Resolve pinned sibling review commits
-        shell: bash
-        run: python .github/scripts/setup-coordinated-stack.py
       - run: cargo nextest run -p risaml --locked
       - run: cargo test -p risaml --doc --locked
-
-  # The upstream cargo-semver-checks job compared the package against its
-  # latest crates.io release. risaml has no crates.io release yet, so there is
-  # no baseline to compare against; restore the job (package: risaml) once
-  # risaml 0.6.0 is published.
 
   test:
     name: RustCrypto (${{ matrix.os }}, ${{ matrix.policy }})
@@ -179,9 +162,6 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - uses: taiki-e/install-action@cfdc41eb4dcb5a6d098e06c87a1e91076b799307 # nextest
-      - name: Resolve pinned sibling review commits
-        shell: bash
-        run: python .github/scripts/setup-coordinated-stack.py
       - run: cargo nextest run -p risaml --locked --features "$SAML_TEST_FEATURES"
       - run: cargo test -p risaml --doc --locked --features "$SAML_TEST_FEATURES"
       - run: cargo clippy -p risaml --locked --all-targets --features "$SAML_TEST_FEATURES" -- -D warnings
