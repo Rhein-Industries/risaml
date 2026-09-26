@@ -8,6 +8,11 @@ and rejects unrelated dependency version changes. Subsequent commands use
 `--locked`. Production manifests and the committed registry lockfile remain
 unchanged by the setup script.
 
+Dependency-policy checks run cargo-deny on the host after the same verified
+setup, so all provider audits inspect the coordinated source graph. The audit
+retains the existing advisory, license, ban and source policies; it does not
+add exceptions for the review overrides.
+
 Native Linux, Windows and macOS run complete default, explicit RSA opt-in and
 crypto-free suites. Linux also runs full RustCrypto, AWS-LC and FIPS provider
 suites. SAML operation boundaries initialize the selected provider before

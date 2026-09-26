@@ -170,26 +170,34 @@ mod tests {
 
     #[test]
     fn system_time_conversion_supports_pre_unix_epoch() -> Result<(), Box<dyn std::error::Error>> {
+        // Windows SystemTime represents 100 ns ticks; other platforms retain
+        // this test's original sub-tick precision coverage.
+        let fractional_nanos = if cfg!(windows) { 700 } else { 7 };
         let instant = SystemTime::UNIX_EPOCH
-            .checked_sub(StdDuration::new(1, 7))
+            .checked_sub(StdDuration::new(1, fractional_nanos))
             .ok_or("platform SystemTime cannot represent the test instant")?;
 
         assert_eq!(
             offset_datetime_from_system_time(instant)?.unix_timestamp_nanos(),
-            -1_000_000_007
+            -1_000_000_000 - i128::from(fractional_nanos)
         );
         Ok(())
     }
 
     #[test]
     fn system_time_conversion_preserves_nanoseconds() -> Result<(), Box<dyn std::error::Error>> {
+        let fractional_nanos = if cfg!(windows) {
+            234_567_800
+        } else {
+            234_567_890
+        };
         let instant = SystemTime::UNIX_EPOCH
-            .checked_add(StdDuration::new(1, 234_567_890))
+            .checked_add(StdDuration::new(1, fractional_nanos))
             .ok_or("platform SystemTime cannot represent the test instant")?;
 
         assert_eq!(
             offset_datetime_from_system_time(instant)?.unix_timestamp_nanos(),
-            1_234_567_890
+            1_000_000_000 + i128::from(fractional_nanos)
         );
         Ok(())
     }

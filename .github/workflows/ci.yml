@@ -125,7 +125,7 @@ jobs:
       - run: RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc -p risaml --lib --no-deps --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
       - name: Run all provider unit and integration tests
         run: >-
-          cargo nextest run -p risaml --locked
+          cargo nextest run -p risaml --locked --no-fail-fast
           --no-default-features --features "$CRYPTO_PROVIDER_FEATURES"
       - name: Run provider documentation tests
         run: >-

@@ -1338,9 +1338,38 @@ mod tests {
     const SP_PRIVKEY: &str = include_str!("../../tests/fixtures/key/sp_privkey.pem");
     // IdP signing cert (matches the response_signed.xml signer / idpmeta).
     const IDP_CERT: &str = include_str!("../../tests/fixtures/key/idp_cert.cer");
+    const IDP_PROVIDER_PRIVKEY: &str =
+        include_str!("../../tests/fixtures/key/idp/provider_matrix_privkey.pkcs8.pem");
+    const IDP_PROVIDER_CERT: &str = include_str!("../../tests/fixtures/key/idp/cert.cer");
     // SP signing cert (matches signed_request_sha256.xml signer).
     const SP_CERT: &str = include_str!("../../tests/fixtures/key/sp_cert.cer");
     const SP_SIGNING_CERT: &str = include_str!("../../tests/fixtures/key/sp_signing_cert.cer");
+
+    fn sha256_signed_assertion() -> Result<String, Box<dyn std::error::Error>> {
+        let key = load_private_key(IDP_PROVIDER_PRIVKEY, None)?;
+        Ok(construct_saml_signature(
+            RESPONSE,
+            false,
+            &key,
+            IDP_PROVIDER_CERT,
+            RSA_SHA256,
+            &[],
+            None,
+        )?)
+    }
+
+    fn metadata_signed_response() -> Result<(String, &'static str), Box<dyn std::error::Error>> {
+        // Preserve the historical SHA-1 verification case outside FIPS. FIPS
+        // positive coverage uses the same assertion shape with RSA-SHA256.
+        #[cfg(not(feature = "crypto-fips"))]
+        {
+            Ok((RESPONSE_SIGNED.to_string(), IDP_CERT))
+        }
+        #[cfg(feature = "crypto-fips")]
+        {
+            Ok((sha256_signed_assertion()?, IDP_PROVIDER_CERT))
+        }
+    }
 
     fn signed_response_with_foreign_extension_certificate(
     ) -> Result<String, Box<dyn std::error::Error>> {
@@ -1424,11 +1453,9 @@ mod tests {
 
     #[test]
     fn verifies_signed_response_with_metadata_cert() -> Result<(), Box<dyn std::error::Error>> {
-        let (verified, content) = verify_signature(RESPONSE_SIGNED, &[IDP_CERT.to_string()])?;
-        assert!(
-            verified,
-            "response_signed.xml should verify with the IdP cert"
-        );
+        let (signed, certificate) = metadata_signed_response()?;
+        let (verified, content) = verify_signature(&signed, &[certificate.to_string()])?;
+        assert!(verified, "signed assertion should verify with the IdP cert");
         assert!(content
             .ok_or("expected signed assertion")?
             .contains("Assertion"));
@@ -1437,21 +1464,35 @@ mod tests {
 
     #[test]
     fn verifies_generated_same_document_signature() -> Result<(), Box<dyn std::error::Error>> {
-        let key = load_private_key(SP_PRIVKEY, None)?;
-        let signed = construct_saml_signature(
-            RESPONSE,
-            false,
-            &key,
-            SP_SIGNING_CERT,
-            RSA_SHA256,
-            &[],
-            None,
-        )?;
-        let (verified, content) = verify_signature(&signed, &[SP_SIGNING_CERT.to_string()])?;
+        let signed = sha256_signed_assertion()?;
+        let (verified, content) = verify_signature(&signed, &[IDP_PROVIDER_CERT.to_string()])?;
         assert!(verified);
         assert!(content
             .ok_or("expected signed assertion")?
             .contains("Assertion"));
+        Ok(())
+    }
+
+    #[cfg(feature = "crypto-fips")]
+    #[test]
+    fn fips_rejects_historical_sha1_assertion() -> Result<(), Box<dyn std::error::Error>> {
+        assert!(matches!(
+            verify_signature(RESPONSE_SIGNED, &[IDP_CERT.to_string()]),
+            Err(SamlError::Crypto(message))
+                if message.contains("does not support Digest(Sha1)")
+        ));
+        // verify_all converts per-signature policy errors into Invalid; the
+        // detailed SAML result must therefore carry no verified coverage.
+        let detailed = verify_signatures_detailed_with_limits(
+            RESPONSE_SIGNED,
+            &[IDP_CERT.to_string()],
+            XmlLimits::default(),
+        )?;
+        assert!(
+            !detailed.verified()
+                && !detailed.assertion_directly_covered()
+                && !detailed.response_covered()
+        );
         Ok(())
     }
 
@@ -1515,9 +1556,10 @@ mod tests {
     #[test]
     fn detailed_verification_aggregates_rolling_cert_coverage_after_first_signature_verifies(
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let (signed_assertion, assertion_certificate) = metadata_signed_response()?;
         let response_key = load_private_key(SP_PRIVKEY, None)?;
         let signed_response_and_assertion = construct_saml_signature(
-            RESPONSE_SIGNED,
+            &signed_assertion,
             true,
             &response_key,
             SP_SIGNING_CERT,
@@ -1527,7 +1569,10 @@ mod tests {
         )?;
         let result = verify_signatures_detailed_with_limits(
             &signed_response_and_assertion,
-            &[SP_SIGNING_CERT.to_string(), IDP_CERT.to_string()],
+            &[
+                SP_SIGNING_CERT.to_string(),
+                assertion_certificate.to_string(),
+            ],
             XmlLimits::default(),
         )?;
         assert!(
