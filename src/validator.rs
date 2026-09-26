@@ -65,6 +65,8 @@ pub(crate) fn logout_request_not_on_or_after_deadline(
 /// `drift` is `(not_before_ms, not_on_or_after_ms)` added to the respective
 /// bounds. When neither bound is present the document is treated as valid.
 /// A present-but-unparseable timestamp fails closed (mirrors JS `Invalid Date`).
+/// Bounds shifted outside the runtime's supported time range also fail closed
+/// as a library safety policy.
 pub fn verify_time(
     not_before: Option<&str>,
     not_on_or_after: Option<&str>,
@@ -92,15 +94,18 @@ pub(crate) fn verify_time_at(
     match (not_before, not_on_or_after) {
         (None, None) => true,
         (Some(nb), None) => match parse(nb) {
-            Some(t) => t + nb_drift <= now,
+            Some(t) => t.checked_add(nb_drift).is_some_and(|bound| bound <= now),
             None => false,
         },
         (None, Some(na)) => match parse(na) {
-            Some(t) => now < t + na_drift,
+            Some(t) => t.checked_add(na_drift).is_some_and(|bound| now < bound),
             None => false,
         },
         (Some(nb), Some(na)) => match (parse(nb), parse(na)) {
-            (Some(b), Some(a)) => b + nb_drift <= now && now < a + na_drift,
+            (Some(b), Some(a)) => {
+                b.checked_add(nb_drift).is_some_and(|bound| bound <= now)
+                    && a.checked_add(na_drift).is_some_and(|bound| now < bound)
+            }
             _ => false,
         },
     }
@@ -227,6 +232,45 @@ mod tests {
             None,
             (-50_000_000_000_000, 0)
         ));
+    }
+
+    #[test]
+    fn time_window_rejects_unrepresentable_shifted_bounds() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let bound = "2000-01-01T00:00:00Z";
+        let now = OffsetDateTime::parse("2025-01-01T00:00:00Z", &Rfc3339)?;
+
+        for skew in [i64::MIN, i64::MAX] {
+            assert!(!verify_time_at(Some(bound), None, (skew, 0), now));
+            assert!(!verify_time_at(None, Some(bound), (0, skew), now));
+            assert!(!verify_time_at(
+                Some(bound),
+                Some("2999-01-01T00:00:00Z"),
+                (skew, 0),
+                now,
+            ));
+            assert!(!verify_time_at(Some(bound), Some(bound), (0, skew), now));
+        }
+        let upper_bound = "9999-12-31T23:59:59Z";
+        assert!(!verify_time_at(Some(upper_bound), None, (1_000, 0), now));
+        assert!(!verify_time_at(None, Some(upper_bound), (0, 1_000), now));
+        Ok(())
+    }
+
+    #[test]
+    fn shifted_time_window_keeps_inclusive_start_and_exclusive_end(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let now = OffsetDateTime::parse("2025-01-01T00:00:00Z", &Rfc3339)?;
+        let before = Some("2024-12-31T23:59:59Z");
+        let after = Some("2025-01-01T00:00:01Z");
+
+        assert!(verify_time_at(before, None, (1_000, 0), now));
+        assert!(!verify_time_at(before, None, (1_001, 0), now));
+        assert!(!verify_time_at(None, after, (0, -1_000), now));
+        assert!(verify_time_at(None, after, (0, -999), now));
+        assert!(verify_time_at(before, after, (1_000, -999), now));
+        assert!(!verify_time_at(before, after, (1_000, -1_000), now));
+        Ok(())
     }
 
     #[test]

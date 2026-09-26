@@ -24,12 +24,17 @@ fn to_cert_pem(cert: &str) -> String {
     }
     let b64 = normalize_cert_string(cert);
     let mut body = String::new();
-    let mut i = 0;
-    while i < b64.len() {
-        let end = (i + 64).min(b64.len());
-        body.push_str(&b64[i..end]);
+    // Valid base64 is ASCII. Iterate characters so malformed non-ASCII certificate
+    // text still reaches the key loader's ordinary error path without slicing
+    // through a character boundary.
+    for (index, character) in b64.chars().enumerate() {
+        if index != 0 && index % 64 == 0 {
+            body.push('\n');
+        }
+        body.push(character);
+    }
+    if !b64.is_empty() {
         body.push('\n');
-        i = end;
     }
     format!("-----BEGIN CERTIFICATE-----\n{body}-----END CERTIFICATE-----\n")
 }
@@ -59,6 +64,19 @@ mod tests {
     const SP_PASS: &str = "VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px";
 
     #[test]
+    fn malformed_unicode_certificate_returns_error_without_panicking(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for ascii_prefix_length in [63, 127] {
+            let malformed = format!("{}é{}", "A".repeat(ascii_prefix_length), "A".repeat(64));
+            let error = load_certificate(&malformed)
+                .err()
+                .ok_or("malformed certificate must fail to load")?;
+            assert!(matches!(error, SamlError::Crypto(_)));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn loads_unencrypted_private_key() -> Result<(), Box<dyn std::error::Error>> {
         let key = load_private_key(SP_PRIVKEY, None)?;
         assert!(key.has_private_key());
@@ -67,9 +85,20 @@ mod tests {
     }
 
     #[test]
-    fn loads_encrypted_private_key_with_passphrase() -> Result<(), Box<dyn std::error::Error>> {
-        let key = load_private_key(SP_PRIVKEY_ENC, Some(SP_PASS))?;
-        assert!(key.has_private_key());
+    fn encrypted_private_key_passphrase_matches_provider_capability(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        #[cfg(feature = "crypto-rustcrypto")]
+        {
+            let key = load_private_key(SP_PRIVKEY_ENC, Some(SP_PASS))?;
+            assert!(key.has_private_key());
+        }
+        // AWS-LC providers do not implement the encrypted PKCS#8 loader.
+        #[cfg(any(feature = "crypto-aws-lc", feature = "crypto-fips"))]
+        assert!(matches!(
+            load_private_key(SP_PRIVKEY_ENC, Some(SP_PASS)),
+            Err(SamlError::Crypto(message))
+                if message.contains("encrypted PKCS#8 PEM is not available through the selected provider")
+        ));
         Ok(())
     }
 

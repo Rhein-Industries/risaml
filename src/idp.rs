@@ -289,6 +289,9 @@ impl IdentityProvider {
         options: &LoginResponseOptions<'_>,
         overrides: LoginResponseOverrides<'_>,
     ) -> Result<BindingContext, SamlError> {
+        let now = SystemTime::now();
+        self.metadata.validate_at(now)?;
+        sp.metadata.validate_at(now)?;
         if matches!(binding, Binding::Artifact) {
             return Err(SamlError::UnsupportedBinding {
                 binding: Binding::Artifact,
@@ -545,6 +548,9 @@ impl IdentityProvider {
         now: Option<SystemTime>,
         clock_drifts: (i64, i64),
     ) -> Result<FlowResult, SamlError> {
+        let validation_now = now.unwrap_or_else(SystemTime::now);
+        self.metadata.validate_at(validation_now)?;
+        sp.metadata.validate_at(validation_now)?;
         let signing_certs = sp
             .metadata
             .x509_certificates(crate::constants::CertUse::Signing);

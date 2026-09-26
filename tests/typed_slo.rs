@@ -976,6 +976,50 @@ fn typed_facade_finish_slo_checks_logout_response_replay() -> Result<(), Box<dyn
 }
 
 #[test]
+fn typed_facade_consumes_pending_logout_across_distinct_signed_responses(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let exchange = sp_started_exchange()?;
+    let second_response = exchange.idp.respond_slo(
+        &exchange.sp_descriptor,
+        &exchange.received,
+        RespondSlo::post(),
+    )?;
+    let mut cache = MemoryReplayCache::default();
+    exchange.sp.finish_slo(
+        &exchange.idp_descriptor,
+        &exchange.pending,
+        BrowserInput::<LogoutResponse>::post(exchange.response_fields),
+        validation_with_cache(&mut cache),
+    )?;
+    let completion_key = format!(
+        "completed_logout_request_id:{}",
+        exchange.pending.id().as_str()
+    );
+    assert!(cache.seen.contains_key(&completion_key));
+    assert!(matches!(exchange.sp.finish_slo(
+        &exchange.idp_descriptor,
+        &exchange.pending,
+        BrowserInput::<LogoutResponse>::post(post_fields(&second_response)?),
+        validation_with_cache(&mut cache),
+    ), Err(SamlError::ReplayDetected { key }) if key == completion_key));
+    let expired = exchange
+        .pending
+        .with_expiration(risaml::SamlInstant::try_new("2000-01-01T00:00:00Z")?);
+    assert!(matches!(
+        exchange.sp.finish_slo(
+            &exchange.idp_descriptor,
+            &expired,
+            BrowserInput::<LogoutResponse>::post(Vec::new()),
+            validation()
+        ),
+        Err(SamlError::TimeWindowInvalid {
+            field: TimeWindowField::PendingRequestExpiration
+        })
+    ));
+    Ok(())
+}
+
+#[test]
 fn typed_facade_finish_slo_requires_replay_retention_for_logout_response(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let exchange = sp_started_exchange()?;
@@ -1318,8 +1362,8 @@ fn typed_session_participant_slo_keeps_generated_expiration_unset_for_every_bind
         let started = sp.start_slo(&idp_descriptor, subject()?, start_slo_for_binding(binding))?;
         let xml = outbound_xml(&started.outbound, "SAMLRequest")?;
         assert!(!xml.contains("NotOnOrAfter="));
-        assert!(started.pending.issued_at().is_none());
-        assert!(started.pending.expires_at().is_none());
+        assert!(started.pending.issued_at().is_some());
+        assert!(started.pending.expires_at().is_some());
     }
     Ok(())
 }

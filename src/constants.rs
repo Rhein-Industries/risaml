@@ -218,9 +218,14 @@ pub mod data_encryption_algorithm {
 }
 
 pub(crate) fn is_xml_encryption_cbc_algorithm(algorithm: &str) -> bool {
+    // XML Encryption 1.0 section 5.2.2 also defines AES-192-CBC, which the
+    // crypto backend accepts through Custom algorithm policy. SAML Approved
+    // Errata 05 E93's integrity recommendation applies to every CBC key size.
+    const AES_192_CBC: &str = "http://www.w3.org/2001/04/xmlenc#aes192-cbc";
     matches!(
         algorithm,
         data_encryption_algorithm::AES_128
+            | AES_192_CBC
             | data_encryption_algorithm::AES_256
             | data_encryption_algorithm::TRIPLE_DES
     )
@@ -446,6 +451,26 @@ mod tests {
             status_code::SUCCESS,
             "urn:oasis:names:tc:SAML:2.0:status:Success"
         );
+    }
+
+    #[test]
+    fn cbc_integrity_policy_covers_every_xml_encryption_key_size() {
+        for algorithm in [
+            data_encryption_algorithm::AES_128,
+            "http://www.w3.org/2001/04/xmlenc#aes192-cbc",
+            data_encryption_algorithm::AES_256,
+            data_encryption_algorithm::TRIPLE_DES,
+        ] {
+            assert!(is_xml_encryption_cbc_algorithm(algorithm));
+        }
+        for algorithm in [
+            data_encryption_algorithm::AES_128_GCM,
+            "http://www.w3.org/2009/xmlenc11#aes192-gcm",
+            "http://www.w3.org/2009/xmlenc11#aes256-gcm",
+            "unknown",
+        ] {
+            assert!(!is_xml_encryption_cbc_algorithm(algorithm));
+        }
     }
 
     #[test]

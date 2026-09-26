@@ -1,5 +1,7 @@
 //! Base64 helpers with SAML whitespace normalization.
 
+use std::borrow::Cow;
+
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
 
@@ -14,6 +16,9 @@ pub fn base64_encode(input: &[u8]) -> String {
 
 /// Decode standard base64, ignoring any SAML-inserted whitespace.
 pub fn base64_decode(input: &str) -> Result<Vec<u8>, SamlError> {
+    if input.is_ascii() && !input.bytes().any(|byte| byte.is_ascii_whitespace()) {
+        return Ok(STANDARD.decode(input)?);
+    }
     let normalized: String = input.split_whitespace().collect();
     Ok(STANDARD.decode(normalized)?)
 }
@@ -33,9 +38,14 @@ pub fn base64_decode_with_limit(input: &str, max_output_len: usize) -> Result<Ve
         return Err(SamlError::Invalid(BASE64_OUTPUT_LIMIT_EXCEEDED.into()));
     }
 
-    let mut normalized = String::with_capacity(normalized_len);
-    normalized.extend(input.chars().filter(|ch| !ch.is_whitespace()));
-    let out = STANDARD.decode(normalized)?;
+    let normalized = if normalized_len == input.len() && input.is_ascii() {
+        Cow::Borrowed(input)
+    } else {
+        let mut normalized = String::with_capacity(normalized_len);
+        normalized.extend(input.chars().filter(|ch| !ch.is_whitespace()));
+        Cow::Owned(normalized)
+    };
+    let out = STANDARD.decode(normalized.as_bytes())?;
     if out.len() > max_output_len {
         return Err(SamlError::Invalid(BASE64_OUTPUT_LIMIT_EXCEEDED.into()));
     }

@@ -8,6 +8,10 @@
 //!   targets the document element, an ancestor, or a sibling of the Signature.
 //! - Explicit XSW guard: reject any `Assertion`/`Signature` nested under
 //!   `SubjectConfirmationData`.
+//! - XML-DSig signatures outside message-level or direct assertion-level
+//!   positions are rejected before backend processing.
+//! - Every backend-visible XML-DSig signature is checked for same-document
+//!   references and content-preserving transforms before backend processing.
 //! - Only content covered by a verified reference is returned for extraction.
 
 use super::keys::load_certificate;
@@ -15,7 +19,13 @@ use crate::constants::transform_algorithm;
 use crate::error::{ReferenceResolutionReason, SamlError, SignatureVerificationReason};
 use crate::util::normalize_cert_string;
 use crate::xml::dom::{self, Node, XmlLimits};
+use quick_xml::encoding::Decoder;
+use quick_xml::events::attributes::Attribute;
+use quick_xml::events::{BytesStart, Event};
+use quick_xml::name::{QName, ResolveResult};
+use quick_xml::{NsReader, XmlVersion};
 use ribergshamra::{verify, verify_all, DsigContext, KeysManager, VerifiedReference, VerifyResult};
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 fn children_named<'a>(node: &'a Node, name: &str) -> Vec<&'a Node> {
@@ -65,7 +75,10 @@ fn saml_id_attr(name: &str) -> bool {
 
 fn duplicate_saml_id(node: &Node, seen: &mut HashSet<String>) -> Option<String> {
     for (name, value) in &node.attrs {
-        if saml_id_attr(name) && !value.is_empty() && !seen.insert(value.clone()) {
+        // The provider can inspect aliases by local name. Keep the duplicate-ID
+        // guard conservative even though consumed SAML attributes are exact.
+        let local_name = name.rsplit(':').next().unwrap_or(name);
+        if saml_id_attr(local_name) && !value.is_empty() && !seen.insert(value.clone()) {
             return Some(value.clone());
         }
     }
@@ -179,7 +192,7 @@ const XML_C14N_10_WITH_COMMENTS: &str =
 const XML_C14N_11: &str = "http://www.w3.org/2006/12/xml-c14n11";
 const XML_C14N_11_WITH_COMMENTS: &str = "http://www.w3.org/2006/12/xml-c14n11#WithComments";
 
-fn metadata_signature_transform_allowed(algorithm: &str) -> bool {
+fn signature_transform_preserves_content(algorithm: &str) -> bool {
     matches!(
         algorithm,
         transform_algorithm::ENVELOPED_SIGNATURE
@@ -192,18 +205,33 @@ fn metadata_signature_transform_allowed(algorithm: &str) -> bool {
     )
 }
 
-fn ensure_metadata_reference_transforms_preserve_descriptor(
-    reference: &Node,
-) -> Result<(), SamlError> {
+fn ensure_reference_transforms_preserve_content(reference: &Node) -> Result<(), SamlError> {
     for transforms in children_named(reference, "Transforms") {
         for transform in children_named(transforms, "Transform") {
             if transform
                 .attr("Algorithm")
-                .is_some_and(metadata_signature_transform_allowed)
+                .is_some_and(signature_transform_preserves_content)
             {
                 continue;
             }
             return Err(verified_content_not_covered());
+        }
+    }
+    Ok(())
+}
+
+// SAML Core 5.4.4 (OASIS Standard 2005, unchanged by Approved Errata 05)
+// permits verifiers to reject other reference transforms. If
+// accepted, they must ensure that no SAML content is excluded. An ID match alone
+// cannot establish that guarantee for XPath, XSLT, or other filtering transforms.
+// Keep the existing metadata-supported canonicalization methods: they preserve
+// message content, as does removal of the enveloped Signature itself.
+fn ensure_signature_transforms_preserve_content(signatures: &[&Node]) -> Result<(), SamlError> {
+    for signature in signatures {
+        for signed_info in children_named(signature, "SignedInfo") {
+            for reference in children_named(signed_info, "Reference") {
+                ensure_reference_transforms_preserve_content(reference)?;
+            }
         }
     }
     Ok(())
@@ -214,14 +242,7 @@ fn ensure_metadata_signature_transforms_preserve_descriptor(root: &Node) -> Resu
         return Ok(());
     }
 
-    for signature in children_named(root, "Signature") {
-        for signed_info in children_named(signature, "SignedInfo") {
-            for reference in children_named(signed_info, "Reference") {
-                ensure_metadata_reference_transforms_preserve_descriptor(reference)?;
-            }
-        }
-    }
-    Ok(())
+    ensure_signature_transforms_preserve_content(&children_named(root, "Signature"))
 }
 
 fn verified_root_content(
@@ -313,11 +334,232 @@ fn preflight_saml_reference_uris(signatures: &[&Node]) -> Result<(), SamlError> 
     Ok(())
 }
 
+#[derive(Clone, Copy)]
+enum SignatureScope {
+    Other,
+    Signature,
+    SignedInfo,
+    Reference,
+    Transforms,
+}
+
+#[derive(Clone, Copy)]
+enum SignaturePosition {
+    Message,
+    Response,
+    DirectAssertion,
+    Other,
+}
+
+impl SignaturePosition {
+    fn permits_signature(self) -> bool {
+        matches!(self, Self::Message | Self::Response | Self::DirectAssertion)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct SignatureFrame {
+    scope: SignatureScope,
+    position: SignaturePosition,
+}
+
+fn signature_position(
+    element: &BytesStart<'_>,
+    namespace: Option<&str>,
+    ancestors: &[SignatureFrame],
+) -> SignaturePosition {
+    // Retain the raw API's unqualified message compatibility. A foreign
+    // namespace never acquires SAML signature positions through its name.
+    let in_namespace = |expected: &str| namespace.is_none_or(|namespace| namespace == expected);
+    let local_name = element.local_name();
+    let name = local_name.as_ref();
+    if ancestors.is_empty() {
+        if name == b"Assertion" && in_namespace(crate::constants::namespace::ASSERTION) {
+            return SignaturePosition::Message;
+        }
+        if matches!(name, b"EntityDescriptor" | b"EntitiesDescriptor")
+            && in_namespace(crate::constants::namespace::METADATA)
+        {
+            return SignaturePosition::Message;
+        }
+        if in_namespace(crate::constants::namespace::PROTOCOL) {
+            return match name {
+                b"Response" => SignaturePosition::Response,
+                b"AuthnRequest"
+                | b"LogoutRequest"
+                | b"LogoutResponse"
+                | b"ArtifactResolve"
+                | b"ArtifactResponse"
+                | b"AssertionIDRequest"
+                | b"SubjectQuery"
+                | b"AuthnQuery"
+                | b"AttributeQuery"
+                | b"AuthzDecisionQuery"
+                | b"ManageNameIDRequest"
+                | b"ManageNameIDResponse"
+                | b"NameIDMappingRequest"
+                | b"NameIDMappingResponse" => SignaturePosition::Message,
+                _ => SignaturePosition::Other,
+            };
+        }
+    } else if ancestors.len() == 1
+        && matches!(ancestors[0].position, SignaturePosition::Response)
+        && name == b"Assertion"
+        && in_namespace(crate::constants::namespace::ASSERTION)
+    {
+        return SignaturePosition::DirectAssertion;
+    }
+    SignaturePosition::Other
+}
+
+fn signature_namespace<'a>(
+    namespace: &'a ResolveResult<'_>,
+    decoder: Decoder,
+) -> Result<Option<Cow<'a, str>>, SamlError> {
+    match namespace {
+        ResolveResult::Unbound => Ok(None),
+        ResolveResult::Bound(namespace) => {
+            // NsReader exposes raw xmlns attribute bytes. Apply the same XML
+            // attribute normalization as the backend before comparing URIs.
+            Attribute {
+                key: QName(b"xmlns"),
+                value: Cow::Borrowed(namespace.as_ref()),
+            }
+            .decoded_and_normalized_value(XmlVersion::Implicit1_0, decoder)
+            .map(Some)
+            .map_err(|error| SamlError::Xml(error.to_string()))
+        }
+        // An unresolved prefix receives no recognized signature positions.
+        // Keep unsigned raw templates compatible instead of adding general
+        // namespace validation to this verification boundary.
+        ResolveResult::Unknown(_) => Ok(Some(Cow::Borrowed(""))),
+    }
+}
+
+fn signature_attribute(
+    element: &BytesStart<'_>,
+    name: &[u8],
+    decoder: Decoder,
+) -> Result<Option<String>, SamlError> {
+    let mut value = None;
+    for attribute in element.attributes() {
+        let attribute = attribute.map_err(|error| SamlError::Xml(error.to_string()))?;
+        if attribute.key.as_namespace_binding().is_some() {
+            continue;
+        }
+        if attribute.key.local_name().as_ref() == name {
+            // The backend looks up these attributes by local name. Reject a
+            // qualified alias so its selected value cannot differ from ours.
+            if attribute.key.as_ref() != name {
+                return Err(SamlError::Xml(
+                    "qualified XML signature reference attribute".into(),
+                ));
+            }
+            value = Some(
+                attribute
+                    .decoded_and_normalized_value(XmlVersion::Implicit1_0, decoder)
+                    .map_err(|error| SamlError::Xml(error.to_string()))?
+                    .into_owned(),
+            );
+        }
+    }
+    Ok(value)
+}
+
+fn preflight_signature_element(
+    element: &BytesStart<'_>,
+    is_dsig: bool,
+    parent: SignatureScope,
+    decoder: Decoder,
+) -> Result<SignatureScope, SamlError> {
+    if !is_dsig {
+        return Ok(SignatureScope::Other);
+    }
+    let scope = match (element.local_name().as_ref(), parent) {
+        (b"Signature", _) => SignatureScope::Signature,
+        (b"SignedInfo", SignatureScope::Signature) => SignatureScope::SignedInfo,
+        (b"Reference", SignatureScope::SignedInfo) => {
+            let uri = signature_attribute(element, b"URI", decoder)?.unwrap_or_default();
+            verified_target_from_uri(&uri)?;
+            SignatureScope::Reference
+        }
+        (b"Transforms", SignatureScope::Reference) => SignatureScope::Transforms,
+        (b"Transform", SignatureScope::Transforms) => {
+            let algorithm = signature_attribute(element, b"Algorithm", decoder)?;
+            if !algorithm
+                .as_deref()
+                .is_some_and(signature_transform_preserves_content)
+            {
+                return Err(verified_content_not_covered());
+            }
+            SignatureScope::Other
+        }
+        _ => SignatureScope::Other,
+    };
+    Ok(scope)
+}
+
+// OASIS SAML Core 2.3.3, 3.2.1, and 3.2.2 and Metadata 2.3.1/2.3.2 place an
+// enveloped Signature directly under its signed assertion/message/descriptor.
+// This verifier consumes the root and direct Response assertions only. Reject
+// signatures elsewhere as a library processing boundary, including signatures
+// that another extension or nested-assertion profile could legitimately define.
+// The backend discovers every XML-DSig Signature descendant; restricting only
+// candidate selection would leave that larger set available to the backend.
+fn preflight_backend_signatures(xml: &str) -> Result<(), SamlError> {
+    let mut reader = NsReader::from_str(xml);
+    let mut scopes: Vec<SignatureFrame> = Vec::new();
+    loop {
+        let decoder = reader.decoder();
+        let (namespace, event) = reader
+            .read_resolved_event()
+            .map_err(|error| SamlError::Xml(error.to_string()))?;
+        let namespace = signature_namespace(&namespace, decoder)?;
+        let is_dsig = namespace.as_deref() == Some(crate::constants::namespace::DSIG);
+        let parent = scopes.last().copied();
+        let parent_scope = parent.map_or(SignatureScope::Other, |frame| frame.scope);
+        let empty_element = matches!(&event, Event::Empty(_));
+        match event {
+            Event::Start(element) | Event::Empty(element) => {
+                // Approved SAML Errata 05 E91 adds Core 5.4.5 and Metadata
+                // 3.1.5: verifiers SHOULD reject signatures containing Object.
+                if is_dsig
+                    && element.local_name().as_ref() == b"Object"
+                    && scopes
+                        .iter()
+                        .any(|frame| matches!(frame.scope, SignatureScope::Signature))
+                {
+                    return Err(SamlError::PotentialWrappingAttack);
+                }
+                if is_dsig
+                    && element.local_name().as_ref() == b"Signature"
+                    && !parent.is_some_and(|frame| frame.position.permits_signature())
+                {
+                    return Err(SamlError::PotentialWrappingAttack);
+                }
+                let frame = SignatureFrame {
+                    scope: preflight_signature_element(&element, is_dsig, parent_scope, decoder)?,
+                    position: signature_position(&element, namespace.as_deref(), &scopes),
+                };
+                if !empty_element {
+                    scopes.push(frame);
+                }
+            }
+            Event::End(_) => {
+                scopes.pop();
+            }
+            Event::Eof => return Ok(()),
+            _ => {}
+        }
+    }
+}
+
 pub(crate) fn has_xml_signature_with_limits(
     xml: &str,
     limits: XmlLimits,
 ) -> Result<bool, SamlError> {
     let doc = dom::parse_with_limits(xml, limits)?;
+    preflight_backend_signatures(xml)?;
     Ok(has_saml_xml_signature(&doc.root))
 }
 
@@ -343,10 +585,16 @@ fn inline_signature_cert(signatures: &[&Node]) -> Option<String> {
 /// - `(true, Some(xml))` with the signed assertion/response on success;
 /// - `Err(PotentialWrappingAttack)` on a detected XSW attempt.
 ///
+/// References must be same-document. Only enveloped-signature and supported
+/// canonicalization transforms are accepted; filtering transforms cannot prove
+/// that the returned SAML content is fully covered.
+/// XML-DSig signatures outside the signed root or a direct Response assertion
+/// are rejected before backend processing, including signatures in extensions.
+///
 /// # Errors
 ///
 /// Returns [`SamlError`] when XML parsing, trust checks, reference resolution,
-/// cryptographic verification, or signed-content coverage checks fail.
+/// cryptographic verification, transform policy, or signed-content coverage checks fail.
 pub fn verify_signature(
     xml: &str,
     metadata_certs: &[String],
@@ -359,7 +607,7 @@ pub fn verify_signature(
 /// # Errors
 ///
 /// Returns [`SamlError`] when XML parsing, trust checks, reference resolution,
-/// cryptographic verification, or signed-content coverage checks fail.
+/// cryptographic verification, transform policy, or signed-content coverage checks fail.
 pub fn verify_signature_with_limits(
     xml: &str,
     metadata_certs: &[String],
@@ -378,11 +626,13 @@ pub fn verify_signature_with_limits(
     }
 
     // Candidate signatures: message-level (root > Signature) or assertion-level.
+    preflight_backend_signatures(xml)?;
     let signature_candidates = saml_signature_candidates(root);
     if signature_candidates.is_empty() {
         return Ok((false, None));
     }
     preflight_saml_reference_uris(&signature_candidates)?;
+    ensure_signature_transforms_preserve_content(&signature_candidates)?;
 
     // If the message embeds a certificate, it must be one declared in metadata
     // (rolling-cert safety). Verification itself still uses only the metadata
@@ -511,6 +761,7 @@ pub(crate) fn verify_signatures_detailed_with_limits(
         return Err(SamlError::PotentialWrappingAttack);
     }
 
+    preflight_backend_signatures(xml)?;
     let signature_candidates = saml_signature_candidates(root);
     if signature_candidates.is_empty() {
         return Ok(SignatureVerification {
@@ -521,6 +772,7 @@ pub(crate) fn verify_signatures_detailed_with_limits(
         });
     }
     preflight_saml_reference_uris(&signature_candidates)?;
+    ensure_signature_transforms_preserve_content(&signature_candidates)?;
 
     if let Some(inline) = inline_signature_cert(&signature_candidates) {
         let inline = normalize_cert_string(&inline);
@@ -732,7 +984,7 @@ mod tests {
     }
 
     #[test]
-    fn metadata_signature_transform_allowlist_preserves_canonicalization_interoperability() {
+    fn signature_transform_allowlist_preserves_canonicalization_interoperability() {
         const XPATH_TRANSFORM: &str = "http://www.w3.org/TR/1999/REC-xpath-19991116";
         const XSLT_TRANSFORM: &str = "http://www.w3.org/TR/1999/REC-xslt-19991116";
         const UNKNOWN_TRANSFORM: &str = "urn:example:unknown-transform";
@@ -747,17 +999,268 @@ mod tests {
             XML_C14N_11_WITH_COMMENTS,
         ] {
             assert!(
-                metadata_signature_transform_allowed(algorithm),
+                signature_transform_preserves_content(algorithm),
                 "{algorithm}"
             );
         }
 
         for algorithm in [XPATH_TRANSFORM, XSLT_TRANSFORM, UNKNOWN_TRANSFORM] {
             assert!(
-                !metadata_signature_transform_allowed(algorithm),
+                !signature_transform_preserves_content(algorithm),
                 "{algorithm}"
             );
         }
+    }
+
+    #[test]
+    fn saml_verification_rejects_filtering_reference_transforms_before_crypto(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for message in [
+            "Assertion",
+            "Response",
+            "AuthnRequest",
+            "LogoutRequest",
+            "LogoutResponse",
+        ] {
+            for algorithm in [
+                "http://www.w3.org/TR/1999/REC-xpath-19991116",
+                "http://www.w3.org/2002/06/xmldsig-filter2",
+                "http://www.w3.org/TR/1999/REC-xslt-19991116",
+                "http://www.w3.org/2000/09/xmldsig#base64",
+                "urn:example:unknown-transform",
+            ] {
+                // A deliberately unsigned template proves rejection before key
+                // loading or transform execution without constructing a filtered
+                // signature. Full message coverage cannot be inferred from URI.
+                let xml = format!(
+                    r##"<{message} ID="_message" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:Signature><ds:SignedInfo><ds:Reference URI="#_message"><ds:Transforms><ds:Transform Algorithm="{algorithm}"/></ds:Transforms><ds:DigestValue/></ds:Reference></ds:SignedInfo><ds:SignatureValue/></ds:Signature></{message}>"##,
+                );
+                assert!(matches!(
+                    verify_signature(&xml, &[]),
+                    Err(SamlError::SignedReferenceMismatch)
+                ));
+                assert!(matches!(
+                    verify_signatures_detailed_with_limits(&xml, &[], XmlLimits::default()),
+                    Err(SamlError::SignedReferenceMismatch)
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn assertion_level_filtering_transform_and_missing_algorithm_are_rejected(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for transform in [
+            r#"<ds:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116"/>"#,
+            "<ds:Transform/>",
+        ] {
+            let xml = format!(
+                r##"<Response ID="_response" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><Assertion ID="_assertion"><ds:Signature><ds:SignedInfo><ds:Reference URI="#_assertion"><ds:Transforms>{transform}</ds:Transforms></ds:Reference></ds:SignedInfo><ds:SignatureValue/></ds:Signature></Assertion></Response>"##,
+            );
+            assert!(matches!(
+                verify_signature(&xml, &[]),
+                Err(SamlError::SignedReferenceMismatch)
+            ));
+            assert!(matches!(
+                verify_signatures_detailed_with_limits(&xml, &[], XmlLimits::default()),
+                Err(SamlError::SignedReferenceMismatch)
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn unexpected_signature_positions_are_rejected_even_without_a_candidate(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        const DSIG: &str = "http://www.w3.org/2000/09/xmldsig#";
+        for body in [
+            "<Extensions><ds:Signature/></Extensions>",
+            "<Assertion><Advice><ds:Signature/></Advice></Assertion>",
+            "<Assertion><Subject><ds:Signature/></Subject></Assertion>",
+            "<Assertion><Assertion><ds:Signature/></Assertion></Assertion>",
+            "<ds:Signature><ds:Object><ds:Signature/></ds:Object></ds:Signature>",
+            "<foreign:Assertion xmlns:foreign=\"urn:example:extension\"><ds:Signature/></foreign:Assertion>",
+        ] {
+            let xml = format!(r#"<Response xmlns:ds="{DSIG}">{body}</Response>"#);
+            assert!(matches!(
+                verify_signature(&xml, &[]),
+                Err(SamlError::PotentialWrappingAttack)
+            ));
+            assert!(matches!(
+                verify_signatures_detailed_with_limits(&xml, &[], XmlLimits::default()),
+                Err(SamlError::PotentialWrappingAttack)
+            ));
+            assert!(matches!(
+                has_xml_signature_with_limits(&xml, XmlLimits::default()),
+                Err(SamlError::PotentialWrappingAttack)
+            ));
+        }
+        for xml in [
+            format!(r#"<ds:Signature xmlns:ds="{DSIG}"/>"#),
+            format!(r#"<Wrapper xmlns:ds="{DSIG}"><ds:Signature/></Wrapper>"#),
+            format!(
+                r#"<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:ds="{DSIG}"><md:Extensions><ds:Signature/></md:Extensions></md:EntityDescriptor>"#
+            ),
+        ] {
+            assert!(matches!(
+                verify_metadata_signature_detailed(&xml, &[]),
+                Err(SamlError::PotentialWrappingAttack)
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn signature_objects_are_rejected_before_backend_processing(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for root in ["Response", "EntityDescriptor"] {
+            for object in ["<ds:Object/>", "<ds:KeyInfo><ds:Object/></ds:KeyInfo>"] {
+                let xml = format!(
+                    r#"<{root} xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:Signature>{object}</ds:Signature></{root}>"#
+                );
+                assert!(matches!(
+                    preflight_backend_signatures(&xml),
+                    Err(SamlError::PotentialWrappingAttack)
+                ));
+            }
+        }
+        preflight_backend_signatures(
+            r#"<Response xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:x="urn:extension"><ds:Signature><x:Object/></ds:Signature></Response>"#,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn qualified_aliases_still_participate_in_duplicate_saml_id_guard(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let doc = dom::parse(
+            r#"<Response ID="_id" xmlns:x="urn:extension"><Assertion x:ID="_id"/></Response>"#,
+        )?;
+        assert_eq!(
+            duplicate_saml_id(&doc.root, &mut HashSet::new()),
+            Some("_id".into())
+        );
+        assert_eq!(node_saml_id(&doc.root.children[0]), None);
+        Ok(())
+    }
+
+    #[test]
+    fn expected_signature_positions_preserve_namespace_and_empty_element_handling(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for xml in [
+            r#"<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><saml:Issuer/><ds:Signature/><samlp:Status/><saml:Assertion><saml:Issuer/><ds:Signature/></saml:Assertion></samlp:Response>"#,
+            r#"<Assertion xmlns="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><Issuer/><ds:Signature/></Assertion>"#,
+            r#"<AuthnRequest xmlns="urn:oasis:names:tc:SAML:2.0:protocol"><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"/></AuthnRequest>"#,
+            r#"<LogoutRequest xmlns="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:Signature/></LogoutRequest>"#,
+            r#"<LogoutResponse xmlns="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:Signature/></LogoutResponse>"#,
+            r#"<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:Signature/></EntityDescriptor>"#,
+            r#"<Response xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:Signature/><Assertion><ds:Signature/></Assertion></Response>"#,
+        ] {
+            preflight_backend_signatures(xml)?;
+            assert!(has_xml_signature_with_limits(xml, XmlLimits::default())?);
+            assert!(matches!(
+                verify_signature(xml, &[]),
+                Err(SamlError::NoTrustedCertificate)
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn signature_positions_use_normalized_namespace_uris() -> Result<(), Box<dyn std::error::Error>>
+    {
+        // Ordinary character references are legal XML namespace syntax.
+        let expected = r#"<Response xmlns="urn:oasis:names:tc:SAML:2.0:protoco&#108;" xmlns:ds="http://www.w3.org/2000/09/xmldsig&#35;"><ds:Signature/><Assertion xmlns="urn:oasis:names:tc:SAML:2.0:assertio&#110;"><ds:Signature/></Assertion></Response>"#;
+        preflight_backend_signatures(expected)?;
+        assert!(has_xml_signature_with_limits(
+            expected,
+            XmlLimits::default()
+        )?);
+
+        let misplaced = r#"<Response xmlns:ds="http://www.w3.org/2000/09/xmldsig&#35;"><Extensions><ds:Signature/></Extensions></Response>"#;
+        assert!(matches!(
+            verify_signature(misplaced, &[]),
+            Err(SamlError::PotentialWrappingAttack)
+        ));
+        assert!(matches!(
+            has_xml_signature_with_limits(misplaced, XmlLimits::default()),
+            Err(SamlError::PotentialWrappingAttack)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn misplaced_dsig_signatures_are_rejected_before_reference_preflight(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for reference in [
+            r#"<Reference URI="urn:example:external"/>"#,
+            r##"<Reference URI="#_response"><Transforms><Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116"/></Transforms></Reference>"##,
+        ] {
+            // Placement is checked before any key, reference, or transform is
+            // handed to the backend; unsigned templates are sufficient here.
+            let xml = format!(
+                r##"<Response ID="_response" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:Signature><ds:SignedInfo><ds:Reference URI="#_response"/></ds:SignedInfo></ds:Signature><Extensions><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo>{reference}</SignedInfo></Signature></Extensions></Response>"##,
+            );
+            assert!(matches!(
+                verify_signature(&xml, &[]),
+                Err(SamlError::PotentialWrappingAttack)
+            ));
+            assert!(matches!(
+                verify_signatures_detailed_with_limits(&xml, &[], XmlLimits::default()),
+                Err(SamlError::PotentialWrappingAttack)
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn signature_preflight_rejects_qualified_attribute_aliases(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for reference in [
+            r##"<Reference alias:URI="#_response"/>"##,
+            r##"<Reference alias:URI="#_response" URI="#_response"/>"##,
+            r##"<Reference URI="#_response" alias:URI="#_response"/>"##,
+            r##"<Reference URI="#_response"><Transforms><Transform alias:Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></Transforms></Reference>"##,
+            r##"<Reference URI="#_response"><Transforms><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" alias:Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></Transforms></Reference>"##,
+        ] {
+            let xml = format!(
+                r##"<Response ID="_response"><Signature xmlns="http://www.w3.org/2000/09/xmldsig#" xmlns:alias="urn:example:attributes"><SignedInfo>{reference}</SignedInfo></Signature></Response>"##,
+            );
+            assert!(matches!(
+                verify_signature(&xml, &[]),
+                Err(SamlError::Xml(_))
+            ));
+            assert!(matches!(
+                verify_signatures_detailed_with_limits(&xml, &[], XmlLimits::default()),
+                Err(SamlError::Xml(_))
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn signature_scanner_ignores_namespace_declaration_names(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let xml = r##"<Response ID="_response"><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><Reference xmlns:URI="urn:example:unused" URI="#_response"/></SignedInfo></Signature></Response>"##;
+        preflight_backend_signatures(xml)?;
+        assert!(has_xml_signature_with_limits(xml, XmlLimits::default())?);
+        Ok(())
+    }
+
+    #[test]
+    fn foreign_signature_extension_is_outside_backend_reference_preflight(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let xml = r##"<Response ID="_response" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:Signature><ds:SignedInfo><ds:Reference URI="#_response"/></ds:SignedInfo></ds:Signature><Extensions><Signature xmlns="urn:example:extension"><SignedInfo><Reference URI="urn:example:external"><Transforms><Transform Algorithm="urn:example:extension-transform"/></Transforms></Reference></SignedInfo></Signature></Extensions></Response>"##;
+        assert!(matches!(
+            verify_signature(xml, &[]),
+            Err(SamlError::NoTrustedCertificate)
+        ));
+        assert!(matches!(
+            verify_signatures_detailed_with_limits(xml, &[], XmlLimits::default()),
+            Err(SamlError::NoTrustedCertificate)
+        ));
+        Ok(())
     }
 
     #[test]

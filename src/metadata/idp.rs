@@ -49,7 +49,12 @@ impl IdpMetadata {
             .attrs(&["Location"]),
         ];
         Ok(Self {
-            inner: Metadata::parse_with_limits(xml, extra, limits)?,
+            inner: Metadata::parse_for_role_with_limits(
+                xml,
+                extra,
+                limits,
+                Some("IDPSSODescriptor"),
+            )?,
         })
     }
 

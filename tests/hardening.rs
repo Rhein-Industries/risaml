@@ -627,8 +627,18 @@ fn hardening_sign_then_encrypt_message_auto_resolves() -> Result<(), Box<dyn std
         },
     )?;
     let req = HttpRequest::post(vec![("SAMLResponse".into(), ctx.context)]);
-    let parsed = sp.parse_login_response_with_request_id(&idp, Binding::Post, &req, "_req1")?;
-    assert_eq!(parsed.extract.get_str("nameID"), Some("a@example.com"));
+    let result = sp.parse_login_response_with_request_id(&idp, Binding::Post, &req, "_req1");
+    if cfg!(all(
+        feature = "crypto-rustcrypto",
+        not(feature = "crypto-legacy-rsa-decryption")
+    )) {
+        assert!(matches!(
+            result,
+            Err(SamlError::Crypto(message)) if message.contains("legacy-rsa-decryption")
+        ));
+    } else {
+        assert_eq!(result?.extract.get_str("nameID"), Some("a@example.com"));
+    }
     Ok(())
 }
 

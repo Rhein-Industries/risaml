@@ -56,6 +56,9 @@ crypto-rustcrypto = ["dep:ribergshamra", "ribergshamra/rustcrypto"]
 crypto-aws-lc = ["dep:ribergshamra", "ribergshamra/aws-lc"]
 crypto-fips = ["dep:ribergshamra", "ribergshamra/fips"]
 crypto-legacy-algorithms = ["ribergshamra?/legacy-algorithms"]
+# Separate, off-by-default acceptance of the unresolved RustCrypto RSA
+# private-decryption timing risk. This does not select a crypto provider.
+crypto-legacy-rsa-decryption = ["ribergshamra?/legacy-rsa-decryption"]
 crypto-post-quantum = ["ribergshamra?/post-quantum"]
 crypto-pkcs11 = ["ribergshamra?/pkcs11"]
 

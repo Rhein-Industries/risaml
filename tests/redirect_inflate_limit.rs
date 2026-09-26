@@ -1,5 +1,6 @@
 use risaml::binding::{
-    base64_encode, deflate_raw_decode, deflate_raw_encode, MAX_DEFLATE_RAW_DECODE_BYTES,
+    base64_encode, deflate_raw_decode, deflate_raw_decode_with_limit, deflate_raw_encode,
+    MAX_DEFLATE_RAW_DECODE_BYTES,
 };
 use risaml::constants::{Binding, ParserType};
 use risaml::entity::EntitySetting;
@@ -61,6 +62,46 @@ fn deflate_raw_decode_rejects_oversized_output() -> Result<(), Box<dyn std::erro
         err,
         SamlError::Invalid(message) if message == LIMIT_ERROR
     ));
+    Ok(())
+}
+
+#[test]
+fn deflate_raw_decode_rejects_incomplete_streams() -> Result<(), Box<dyn std::error::Error>> {
+    let mut compressed = deflate_raw_encode(b"<Message>synthetic</Message>")?;
+    compressed.pop().ok_or("missing compressed byte")?;
+
+    assert!(matches!(
+        deflate_raw_decode(&compressed),
+        Err(SamlError::Deflate(_))
+    ));
+    assert!(matches!(
+        deflate_raw_decode(&[]),
+        Err(SamlError::Deflate(_))
+    ));
+    Ok(())
+}
+
+#[test]
+fn deflate_raw_decode_preserves_exact_limit_and_trailing_byte_behavior(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let original = (0..10_000)
+        .map(|index| (index % 251) as u8)
+        .collect::<Vec<_>>();
+    let mut compressed = deflate_raw_encode(&original)?;
+    assert_eq!(
+        deflate_raw_decode_with_limit(&compressed, original.len())?,
+        original
+    );
+    assert!(matches!(
+        deflate_raw_decode_with_limit(&compressed, original.len() - 1),
+        Err(SamlError::Invalid(message)) if message == LIMIT_ERROR
+    ));
+    compressed.extend_from_slice(b"trailing bytes");
+    assert_eq!(
+        deflate_raw_decode_with_limit(&compressed, usize::MAX)?,
+        original
+    );
+    assert!(deflate_raw_decode_with_limit(&deflate_raw_encode(&[])?, 0)?.is_empty());
     Ok(())
 }
 

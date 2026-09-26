@@ -6,7 +6,7 @@
 //! whole-node context capture, `index`+`attributePath` aggregation, and
 //! multi-path union.
 
-use super::dom::{self, Node, XmlLimits};
+use super::dom::{self, Document, Node, XmlLimits};
 use crate::error::SamlError;
 use crate::util::{camel_case, uniq, zip_object, Value};
 
@@ -248,13 +248,22 @@ pub fn extract_with_limits(
     limits: XmlLimits,
 ) -> Result<Value, SamlError> {
     let root_doc = dom::parse_with_limits(xml, limits)?;
-    let mut out: Vec<(String, Value)> = Vec::new();
+    // Assertion-scoped field sets repeatedly use the same verified source.
+    // Keep at most one shortcut DOM and retain the normal parse/limit checks
+    // whenever a different source is selected.
+    let mut shortcut_doc: Option<(&str, Document)> = None;
+    let mut out: Vec<(String, Value)> = Vec::with_capacity(fields.len());
     for field in fields {
         let value = match &field.shortcut {
-            Some(sc) => {
-                let doc = dom::parse_with_limits(sc, limits)?;
-                extract_field(sc, &doc.root, field)
-            }
+            Some(sc) => match shortcut_doc.as_ref() {
+                Some((source, doc)) if *source == sc => extract_field(sc, &doc.root, field),
+                _ => {
+                    let doc = dom::parse_with_limits(sc, limits)?;
+                    let value = extract_field(sc, &doc.root, field);
+                    shortcut_doc = Some((sc, doc));
+                    value
+                }
+            },
             None => extract_field(xml, &root_doc.root, field),
         };
         out.push((field.key.clone(), value));
