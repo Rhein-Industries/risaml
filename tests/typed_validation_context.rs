@@ -356,26 +356,34 @@ fn typed_validation_context_replay_cache_stores_new_keys() -> Result<(), Box<dyn
 #[test]
 fn typed_validation_context_replay_expiration_preserves_pre_epoch_nanoseconds(
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Keep the expiration after now at the platform's representable precision.
+    // Windows has 100 ns SystemTime ticks; other platforms retain the 1 ns gap.
+    let (now, expires_at) = if cfg!(windows) {
+        (
+            "1969-12-31T23:59:59.123456700Z",
+            "1969-12-31T23:59:59.123456800Z",
+        )
+    } else {
+        (
+            "1969-12-31T23:59:59.123456788Z",
+            "1969-12-31T23:59:59.123456789Z",
+        )
+    };
     let mut flow = session_flow();
     remove_extract_keys(&mut flow, &["sessionIndex", "subjectConfirmation"]);
     flow.extract.insert(
         "conditions",
-        value_object(vec![(
-            "notOnOrAfter",
-            value_str("1969-12-31T23:59:59.123456789Z"),
-        )]),
+        value_object(vec![("notOnOrAfter", value_str(expires_at))]),
     );
     let session = SsoSession::try_from(flow)?;
     let mut cache = MemoryReplayCache::default();
-    let mut validation = SamlValidationContext::new(
-        instant("1969-12-31T23:59:59.123456788Z")?,
-        ReplayPolicy::RequireCache(&mut cache),
-    );
+    let mut validation =
+        SamlValidationContext::new(instant(now)?, ReplayPolicy::RequireCache(&mut cache));
 
     session.check_and_store_replay(&mut validation)?;
     assert_eq!(
         cache.seen.get("response_id:_response123"),
-        Some(&instant("1969-12-31T23:59:59.123456789Z")?)
+        Some(&instant(expires_at)?)
     );
     Ok(())
 }

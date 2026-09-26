@@ -32,6 +32,9 @@ enum NamespaceKind {
 struct ExpandedName {
     local: Vec<u8>,
     namespace: NamespaceKind,
+    conditions_seen: bool,
+    one_time_use_seen: bool,
+    proxy_restriction_seen: bool,
 }
 
 impl ExpandedName {
@@ -361,9 +364,15 @@ fn expected_child_namespace(stack: &[ExpandedName], child: &[u8]) -> Option<Name
         return (child == b"SubjectConfirmationData").then_some(NamespaceKind::Assertion);
     }
     if parent.is(b"Conditions", NamespaceKind::Assertion) {
-        return (child == b"AudienceRestriction").then_some(NamespaceKind::Assertion);
+        return matches!(
+            child,
+            b"AudienceRestriction" | b"OneTimeUse" | b"ProxyRestriction"
+        )
+        .then_some(NamespaceKind::Assertion);
     }
-    if parent.is(b"AudienceRestriction", NamespaceKind::Assertion) {
+    if parent.is(b"AudienceRestriction", NamespaceKind::Assertion)
+        || parent.is(b"ProxyRestriction", NamespaceKind::Assertion)
+    {
         return (child == b"Audience").then_some(NamespaceKind::Assertion);
     }
     if parent.is(b"AttributeStatement", NamespaceKind::Assertion) {
@@ -409,6 +418,27 @@ fn validate_element(
     }
 
     let local = element.local_name();
+    // Core 2.5.1.1 requires relying parties to reject indeterminate Conditions.
+    // The supported Web SSO consumer understands the three concrete standard
+    // condition elements; custom Condition/xsi:type handlers are not supported.
+    if stack
+        .last()
+        .is_some_and(|parent| parent.is(b"Conditions", NamespaceKind::Assertion))
+        && !matches!(
+            local.as_ref(),
+            b"AudienceRestriction" | b"OneTimeUse" | b"ProxyRestriction"
+        )
+    {
+        return Err(profile_error("unsupported assertion condition"));
+    }
+    if stack.last().is_some_and(|parent| {
+        parent.is(b"OneTimeUse", NamespaceKind::Assertion)
+            || (parent.is(b"ProxyRestriction", NamespaceKind::Assertion)
+                || parent.is(b"AudienceRestriction", NamespaceKind::Assertion))
+                && local.as_ref() != b"Audience"
+    }) {
+        return Err(profile_error("unsupported child of assertion condition"));
+    }
     let expected_namespace = expected_child_namespace(stack, local.as_ref());
     if let Some(expected) = expected_namespace {
         if element_namespace != expected {
@@ -425,6 +455,9 @@ fn validate_element(
     let expanded = ExpandedName {
         local: local.as_ref().to_vec(),
         namespace: element_namespace,
+        conditions_seen: false,
+        one_time_use_seen: false,
+        proxy_restriction_seen: false,
     };
     let consumed = consumed_attributes(&expanded);
     if expanded.is(b"Assertion", NamespaceKind::Assertion) {
@@ -436,6 +469,28 @@ fn validate_element(
         )?;
         require_version_2(&attributes, element)?;
         require_issue_instant(&attributes, element)?;
+    } else if expanded.is(b"Conditions", NamespaceKind::Assertion) {
+        validate_closed_unqualified_attributes(reader, element, consumed, &[])?;
+    } else if expanded.is(b"OneTimeUse", NamespaceKind::Assertion)
+        || expanded.is(b"AudienceRestriction", NamespaceKind::Assertion)
+    {
+        validate_closed_unqualified_attributes(reader, element, &[], &[])?;
+    } else if expanded.is(b"ProxyRestriction", NamespaceKind::Assertion) {
+        let attributes = validate_closed_unqualified_attributes(reader, element, &[b"Count"], &[])?;
+        if let Some((_, count)) = attributes.first() {
+            let count = count.trim_matches([' ', '\t', '\n', '\r']);
+            let digits = count.strip_prefix('+').unwrap_or(count);
+            let negative_zero = count.strip_prefix('-').is_some_and(|digits| {
+                !digits.is_empty() && digits.bytes().all(|byte| byte == b'0')
+            });
+            if !negative_zero
+                && (digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()))
+            {
+                return Err(profile_error(
+                    "ProxyRestriction Count must be a non-negative integer",
+                ));
+            }
+        }
     } else if !consumed.is_empty() {
         validate_unqualified_attributes(reader, element, consumed, &[])?;
     }
@@ -452,7 +507,7 @@ pub(crate) fn validate_protocol_profile(
     reader
         .resolver_mut()
         .set_max_declarations_per_element(limits.max_attributes_per_element);
-    let mut stack = Vec::new();
+    let mut stack: Vec<ExpandedName> = Vec::new();
     let mut saw_root = false;
 
     loop {
@@ -460,6 +515,46 @@ pub(crate) fn validate_protocol_profile(
             .read_resolved_event()
             .map_err(|error| SamlError::Xml(error.to_string()))?;
         let element_namespace = classify_namespace(resolved);
+        if let Event::Start(element) | Event::Empty(element) = &event {
+            if element_namespace == NamespaceKind::Assertion {
+                if let Some(parent) = stack
+                    .last_mut()
+                    .filter(|parent| parent.is(b"Conditions", NamespaceKind::Assertion))
+                {
+                    let seen = match element.local_name().as_ref() {
+                        b"OneTimeUse" => Some(&mut parent.one_time_use_seen),
+                        b"ProxyRestriction" => Some(&mut parent.proxy_restriction_seen),
+                        _ => None,
+                    };
+                    if let Some(seen) = seen {
+                        // Core 2.5.1.5/6 prohibit producers from repeating these
+                        // elements. The consumer supports one use restriction,
+                        // rejecting ambiguous repeats as a library boundary.
+                        if *seen {
+                            return Err(profile_error(
+                                "repeated assertion use condition is unsupported",
+                            ));
+                        }
+                        *seen = true;
+                    }
+                }
+            }
+            if element_namespace == NamespaceKind::Assertion
+                && element.local_name().as_ref() == b"Conditions"
+            {
+                if let Some(parent) = stack.last_mut() {
+                    if parent.is(b"Assertion", NamespaceKind::Assertion) {
+                        // AssertionType permits at most one Conditions element.
+                        if parent.conditions_seen {
+                            return Err(SamlError::Invalid(
+                                "multiple assertion Conditions elements".into(),
+                            ));
+                        }
+                        parent.conditions_seen = true;
+                    }
+                }
+            }
+        }
         match event {
             Event::Start(element) => {
                 validate_element(&reader, &element, element_namespace, &stack, parser_type)?;
@@ -467,6 +562,9 @@ pub(crate) fn validate_protocol_profile(
                 stack.push(ExpandedName {
                     local: element.local_name().as_ref().to_vec(),
                     namespace: element_namespace,
+                    conditions_seen: false,
+                    one_time_use_seen: false,
+                    proxy_restriction_seen: false,
                 });
             }
             Event::Empty(element) => {

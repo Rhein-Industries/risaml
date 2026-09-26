@@ -168,6 +168,17 @@ round trip and the [doctested crate-root SSO
 fragment](https://docs.rs/risaml/latest/risaml/#sp-initiated-sso) for the
 compact API shape.
 
+Typed SSO and SP-initiated SLO pending requests expire after five minutes by
+default. `StartSso::pending_lifetime` and `StartSlo::pending_lifetime` set a
+named local correlation lifetime; IdP-initiated SLO defaults to its generated
+wire expiration, which a local lifetime can shorten. Completion always checks
+the stored expiry against the caller's validation clock. `RequireCache` also
+atomically records a separate completed request ID until that expiry, rejecting
+a second completion even when a peer issues a different valid response.
+Persist the expiry when restoring snapshots. Replay-disabled compatibility
+still requires the application to atomically consume browser-bound pending
+state, and must not be used for assertions carrying `OneTimeUse`.
+
 ### Identity Provider - receive and respond
 
 The IdP side mirrors the SP flow: import peer SP metadata into `SpDescriptor`,
@@ -220,6 +231,23 @@ certificates. `MetadataTrustPolicy::UnsignedForCompatibility` is available for
 legacy interoperability, but it is a compatibility exception rather than a
 production default.
 
+Imports retain `validUntil` from the entity and selected SP/IdP role. Each
+typed and raw browser-flow use checks that deadline; signature trust never
+extends metadata validity. `Metadata::validate_at` supports manual consumers
+and refresh managers. Aggregate `EntitiesDescriptor` imports remain unsupported
+and fail closed so parent expiration cannot be discarded. Refresh scheduling
+and `cacheDuration` are application concerns, distinct from hard validity.
+Signing-only and encryption-only metadata keys keep their declared purpose,
+including a sole key; keys without `use` serve both purposes. Role imports
+never borrow another role's keys or endpoints.
+
+Unknown assertion Conditions fail closed. `OneTimeUse` requires a replay
+cache and immediate use of the assertion; retained assertion data must not be
+reused for later decisions. `ProxyRestriction` is understood as a restriction
+on subsequent assertion issuance, not an extra login audience restriction.
+`SsoSession::proxy_restriction_xml` exposes it for applications implementing
+proxy issuance; the built-in SSO consumer does not reissue session assertions.
+
 The compact rustdoc flow snippets use
 `ReplayPolicy::DisabledForCompatibility` only to keep examples dependency-free.
 Production inbound validation should use `ReplayPolicy::RequireCache` with a
@@ -255,6 +283,7 @@ crypto-rustcrypto = ["dep:ribergshamra", "ribergshamra/rustcrypto"]
 crypto-aws-lc = ["dep:ribergshamra", "ribergshamra/aws-lc"]
 crypto-fips = ["dep:ribergshamra", "ribergshamra/fips"]
 crypto-legacy-algorithms = ["ribergshamra?/legacy-algorithms"]
+crypto-legacy-rsa-decryption = ["ribergshamra?/legacy-rsa-decryption"]
 crypto-post-quantum = ["ribergshamra?/post-quantum"]
 crypto-pkcs11 = ["ribergshamra?/pkcs11"]
 ```
@@ -278,6 +307,23 @@ those ribergshamra capabilities without selecting a provider. The default
 behavior; direct provider selection starts with only that provider's baseline.
 Without `crypto-legacy-algorithms`, and always with AWS-LC or FIPS, riptering
 rejects RSA keys shorter than 2048 bits.
+
+`crypto-legacy-rsa-decryption` is a separate, off-by-default compatibility
+exception for the unresolved RustCrypto RSA private-decryption timing advisory.
+Neither `crypto-legacy-algorithms` nor the default feature enables it. To retain
+RustCrypto RSA-OAEP assertion decryption, explicitly select this Cargo feature
+and the existing `XmlEncryptionPolicy` software-RSA risk option (or its raw
+equivalent). The runtime option alone now propagates `SamlError::Crypto` from
+the disabled backend; default runtime policy still returns `Unsupported`.
+The exception does not fix RUSTSEC-2023-0071. RSA encryption, signing and
+verification remain available, and the accepted compatibility wire format is
+unchanged. Non-FIPS AWS-LC decryption is unaffected; FIPS approval restrictions
+remain in force.
+
+The feature requires coordinated `ribergshamra` and `riptering` releases that
+expose `legacy-rsa-decryption`, plus updated consumer lockfiles. Previously
+published dependencies without that feature cannot resolve this forwarding
+edge, even when it is disabled; local review uses the coordinated path patches.
 
 ribergshamra supports AWS-LC and FIPS on Linux x86_64/aarch64. The `risaml`
 provider matrix currently validates Linux x86_64; Linux aarch64 is an upstream
@@ -312,7 +358,7 @@ With `crypto-ribergshamra` enabled:
 - Signed-reference placement checks help mitigate XML Signature Wrapping (XSW).
 - XML-Enc support is available. On the default RustCrypto provider, software
   RSA key-transport decryption is gated off by default and requires an
-  explicit compatibility opt-in through
+  explicit `crypto-legacy-rsa-decryption` feature and runtime opt-in through
   [`XmlEncryptionPolicy`](https://docs.rs/risaml/latest/risaml/struct.XmlEncryptionPolicy.html).
   AWS-LC decrypts RSA-OAEP with the default options.
 
@@ -338,6 +384,8 @@ Security-sensitive defaults and checks include:
 - XML-Enc software RSA key-transport decryption disabled by default on
   RustCrypto because that backend, reached through `ribergshamra` / `riptering`,
   is affected by RUSTSEC-2023-0071. AWS-LC and FIPS do not apply this gate.
+  The separate compile-time exception and runtime risk policy are both required
+  for RustCrypto decryption.
 
 Schema validation is optional defense in depth via
 `context::set_schema_validator`.

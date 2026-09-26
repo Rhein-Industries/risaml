@@ -70,7 +70,10 @@ fn provider_detached_signature_round_trip_uses_sha256() -> Result<(), Box<dyn st
     Ok(())
 }
 
-#[cfg(not(feature = "crypto-fips"))]
+#[cfg(all(
+    not(feature = "crypto-fips"),
+    any(feature = "crypto-aws-lc", feature = "crypto-legacy-rsa-decryption")
+))]
 #[test]
 fn provider_xml_encryption_round_trip_preserves_assertion() -> Result<(), Box<dyn std::error::Error>>
 {
@@ -82,6 +85,25 @@ fn provider_xml_encryption_round_trip_preserves_assertion() -> Result<(), Box<dy
     let (_, assertion) = decrypt_assertion(&encrypted, &key, options)?;
 
     assert!(assertion.contains("Assertion"));
+    Ok(())
+}
+
+#[cfg(all(
+    feature = "crypto-rustcrypto",
+    not(feature = "crypto-legacy-rsa-decryption")
+))]
+#[test]
+fn provider_runtime_rsa_opt_in_still_refuses_disabled_decryption(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let encrypted = encrypt_assertion(RESPONSE, CERTIFICATE, AES_256, RSA_OAEP_MGF1P, "saml")?;
+    assert!(encrypted.contains("EncryptedAssertion"));
+    let key = load_private_key(PRIVATE_KEY, None)?;
+    let mut options = AssertionDecryptionOptions::default();
+    options.allow_insecure_software_rsa_key_transport_decryption = true;
+    assert!(matches!(
+        decrypt_assertion(&encrypted, &key, options),
+        Err(risaml::SamlError::Crypto(message)) if message.contains("legacy-rsa-decryption")
+    ));
     Ok(())
 }
 

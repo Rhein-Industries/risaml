@@ -178,6 +178,9 @@ struct LogoutRequestInput<'a> {
 fn create_logout_request_for_subject_inner(
     input: LogoutRequestInput<'_>,
 ) -> Result<CreatedLogoutRequest, SamlError> {
+    let now = std::time::SystemTime::now();
+    input.init_meta.validate_at(now)?;
+    input.target_meta.validate_at(now)?;
     let LogoutRequestInput {
         init_setting,
         init_meta,
@@ -402,6 +405,9 @@ pub fn create_logout_response_with_id(
 fn create_logout_response_inner(
     input: LogoutResponseInput<'_>,
 ) -> Result<BindingContext, SamlError> {
+    let now = std::time::SystemTime::now();
+    input.init_meta.validate_at(now)?;
+    input.target_meta.validate_at(now)?;
     let LogoutResponseInput {
         init_setting,
         init_meta,

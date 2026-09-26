@@ -57,7 +57,12 @@ impl SpMetadata {
             .attrs(&["Binding", "Location", "isDefault", "index"]),
         ];
         Ok(Self {
-            inner: Metadata::parse_with_limits(xml, extra, limits)?,
+            inner: Metadata::parse_for_role_with_limits(
+                xml,
+                extra,
+                limits,
+                Some("SPSSODescriptor"),
+            )?,
         })
     }
 

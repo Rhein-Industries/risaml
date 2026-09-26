@@ -10,6 +10,50 @@ Versioning while the API is still pre-1.0.
 
 ## Unreleased
 
+### Fixed
+
+- Disable RustCrypto RSA key-transport decryption in the backend by default.
+  Restoring it requires the separate `crypto-legacy-rsa-decryption` feature and
+  the existing explicit runtime risk option; `crypto-legacy-algorithms` does
+  not enable it. This is an exception for unresolved RUSTSEC-2023-0071, not a
+  timing fix. Encryption/signatures, AWS-LC policy and wire formats are unchanged.
+- Reject unsupported assertion Conditions instead of treating indeterminate
+  conditions as valid. Recognize OneTimeUse and ProxyRestriction separately;
+  typed OneTimeUse processing requires assertion replay storage.
+- Retain entity and imported role metadata `validUntil`, and enforce it at
+  inbound/outbound use after storage. Role-specific imports isolate SP/IdP
+  certificates and endpoints, and honor each key's signing/encryption purpose.
+- Bound typed pending SSO and SP-initiated SLO requests to five minutes by
+  default, with named `pending_lifetime` options. IdP-initiated SLO retains its
+  generated wire deadline unless explicitly shortened. Enforce pending expiry
+  and cache completed request IDs with `RequireCache`; restored cached pending
+  requests must carry an expiration.
+- Keep qualified XML attributes distinct from unqualified consumed attributes,
+  exclude namespace declarations from extraction, and reject SAML signature
+  `ds:Object` elements before crypto-provider processing.
+- Reject incomplete XML documents and raw-DEFLATE streams while retaining
+  existing parser and inflated-output limits.
+- Require content-preserving XML signature reference transforms and apply
+  same-document reference preflight to nested XML-DSig signatures before
+  handing the document to the crypto provider. Filtering and unknown reference
+  transforms now fail closed; supported canonicalization transforms remain
+  accepted.
+- Reject XML-DSig signatures outside the signed message/metadata root or a
+  direct Response assertion before signature detection or crypto-provider
+  processing, including when no signature is present in an expected position.
+- Return validation errors for malformed Unicode certificates and
+  unrepresentable clock-skew bounds instead of panicking.
+- Apply the existing CBC Response integrity policy to custom AES-192-CBC
+  algorithms as well as the other supported CBC algorithms.
+
+### Performance
+
+- Reuse the most recent assertion shortcut DOM during field extraction,
+  avoid normalization copies for compact base64 input, and clone only the
+  requested first metadata certificate.
+- Add a local fixture microbenchmark example for XML parsing and cloning,
+  field extraction, binding encoding/decoding, and metadata certificate lookup.
+
 ## 0.6.0 — first risaml release — 2026-09-24
 
 Changes relative to saml-rs 0.5.0 (upstream

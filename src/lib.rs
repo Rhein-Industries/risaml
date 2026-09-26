@@ -292,6 +292,7 @@ compile_error!(
 #[cfg(all(
     any(
         feature = "crypto-legacy-algorithms",
+        feature = "crypto-legacy-rsa-decryption",
         feature = "crypto-post-quantum",
         feature = "crypto-pkcs11"
     ),

@@ -206,6 +206,23 @@ impl SsoSession {
         self.not_on_or_after.as_ref()
     }
 
+    /// Whether the assertion has a OneTimeUse condition. Core 2.5.1.5 forbids
+    /// retaining this assertion for future use; use the authentication result
+    /// immediately and do not reuse the stored assertion for later decisions.
+    pub fn one_time_use(&self) -> bool {
+        matches!(
+            self.raw_flow.extract.get("oneTimeUse"),
+            Some(crate::util::Value::Str(_))
+        ) || matches!(self.raw_flow.extract.get("oneTimeUse"), Some(crate::util::Value::Array(values)) if !values.is_empty())
+    }
+
+    /// Original ProxyRestriction condition, when present. This Web SSO consumer
+    /// does not reissue assertions from a session. An application that does so
+    /// must enforce the Count and Audience restrictions in Core 2.5.1.6.
+    pub fn proxy_restriction_xml(&self) -> Option<&str> {
+        self.raw_flow.extract.get_str("proxyRestriction")
+    }
+
     /// Verified detached signature algorithm, when applicable.
     pub fn sig_alg(&self) -> Option<&str> {
         self.sig_alg.as_deref()
@@ -287,6 +304,9 @@ impl SsoSession {
         let validation_now = validation.now_offset()?;
         let not_on_or_after_skew_ms = validation.clock_skew().not_on_or_after_millis();
         match validation.replay_policy() {
+            ReplayPolicy::DisabledForCompatibility if self.one_time_use() => Err(
+                SamlError::ProtocolProfile("OneTimeUse requires an assertion replay cache".into()),
+            ),
             ReplayPolicy::DisabledForCompatibility => Ok(()),
             ReplayPolicy::RequireCache(cache) => {
                 let expires_at = self.replay_expires_at(validation_now, not_on_or_after_skew_ms)?;

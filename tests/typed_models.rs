@@ -2,10 +2,8 @@ use risaml::binding::base64_encode;
 use risaml::constants::Binding;
 use risaml::metadata::{Endpoint, IdpMetadataConfig, SpMetadataConfig};
 use risaml::raw::{BindingContext, FlowResult};
-use risaml::template::{LoginResponseAttribute, LoginResponseTemplate};
 use risaml::util::Value;
 use risaml::xml::XmlLimits;
-use risaml::{raw::LoginResponseOptions, raw::User};
 use risaml::{
     AcsEndpoint, AuthnRequest, BrowserInput, EndpointUrl, EntityId, EntitySetting, FormField,
     IdentityProvider, LogoutCompleted, LogoutRequest, LogoutResponse, MessageId,
@@ -14,8 +12,15 @@ use risaml::{
     SsoResponseBinding, SsoSession,
 };
 
-const IDP_PRIVATE_KEY: &str = include_str!("fixtures/key/sp_privkey.pem");
-const IDP_CERT: &str = include_str!("fixtures/key/sp_signing_cert.cer");
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
+use risaml::{
+    raw::{LoginResponseOptions, User},
+    template::{LoginResponseAttribute, LoginResponseTemplate},
+};
 
 #[test]
 fn typed_models_empty_request_ids_fail() {
@@ -1494,13 +1499,23 @@ fn idp(setting: EntitySetting) -> Result<IdentityProvider, SamlError> {
     )
 }
 
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 fn signing_setting() -> EntitySetting {
     let mut setting = EntitySetting::default();
-    setting.private_key = Some(IDP_PRIVATE_KEY.to_string());
-    setting.signing_cert = Some(IDP_CERT.to_string());
+    setting.private_key = Some(include_str!("fixtures/key/sp_privkey.pem").to_string());
+    setting.signing_cert = Some(include_str!("fixtures/key/sp_signing_cert.cer").to_string());
     setting
 }
 
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 fn attribute(name: &str, tag: &str) -> LoginResponseAttribute {
     LoginResponseAttribute {
         name: name.to_string(),
@@ -1512,6 +1527,11 @@ fn attribute(name: &str, tag: &str) -> LoginResponseAttribute {
     }
 }
 
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 fn idp_with_attribute_template() -> Result<IdentityProvider, SamlError> {
     let mut setting = signing_setting();
     setting.login_response_template = Some(LoginResponseTemplate {
@@ -1542,6 +1562,12 @@ fn typed_models_existing_authn_request_flow_converts_to_typed_request(
     Ok(())
 }
 
+// These round trips create signed responses, which require a crypto provider.
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 #[test]
 fn typed_models_existing_login_response_flow_converts_to_typed_session(
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -1577,6 +1603,11 @@ fn typed_models_existing_login_response_flow_converts_to_typed_session(
     Ok(())
 }
 
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 #[test]
 fn typed_models_existing_login_response_flow_preserves_multi_value_attributes(
 ) -> Result<(), Box<dyn std::error::Error>> {

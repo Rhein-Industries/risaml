@@ -27,6 +27,7 @@ pub struct StartSso {
     pub(super) relay_state: RelayStateParam,
     pub(super) force_authn: Option<ForceAuthn>,
     pub(super) acs_index: Option<u16>,
+    pub(super) pending_lifetime: std::time::Duration,
 }
 
 impl StartSso {
@@ -52,6 +53,7 @@ impl StartSso {
             relay_state: RelayStateParam::absent(),
             force_authn: None,
             acs_index: None,
+            pending_lifetime: std::time::Duration::from_secs(5 * 60),
         }
     }
 
@@ -76,6 +78,14 @@ impl StartSso {
     /// Select an AssertionConsumerServiceIndex.
     pub fn assertion_consumer_service_index(mut self, acs_index: u16) -> Self {
         self.acs_index = Some(acs_index);
+        self
+    }
+
+    /// Set the local pending request lifetime (default five minutes). This
+    /// bounds correlation and completion-cache retention, not assertion
+    /// validity. Zero or unrepresentable lifetimes fail when SSO starts.
+    pub fn pending_lifetime(mut self, lifetime: std::time::Duration) -> Self {
+        self.pending_lifetime = lifetime;
         self
     }
 }
@@ -175,6 +185,7 @@ pub struct StartSlo {
     pub(super) binding: LogoutBinding,
     pub(super) relay_state: RelayStateParam,
     pub(super) signing: LogoutSigning,
+    pub(super) pending_lifetime: Option<std::time::Duration>,
 }
 
 impl StartSlo {
@@ -198,6 +209,7 @@ impl StartSlo {
             binding,
             relay_state: RelayStateParam::absent(),
             signing: LogoutSigning::FollowLocalPolicy,
+            pending_lifetime: None,
         }
     }
 
@@ -210,6 +222,15 @@ impl StartSlo {
     /// Set logout request signing behavior.
     pub fn signing(mut self, signing: LogoutSigning) -> Self {
         self.signing = signing;
+        self
+    }
+
+    /// Set the local pending request lifetime. Session participants default to
+    /// five minutes; session authorities default to their generated wire
+    /// expiration. This deadline never extends a LogoutRequest wire expiration.
+    /// Zero or unrepresentable lifetimes fail when SLO starts.
+    pub fn pending_lifetime(mut self, lifetime: std::time::Duration) -> Self {
+        self.pending_lifetime = Some(lifetime);
         self
     }
 }

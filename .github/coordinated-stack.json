@@ -1,0 +1,29 @@
+{
+  "riptering": {
+    "revision": "b4b3dbe9bcc2efcea5d6ec5a08df5f6f56b7a860",
+    "packages": {
+      "riptering": "."
+    }
+  },
+  "ritsp-ltv": {
+    "revision": "61da6537128ea8e73beeef9975e8ada77759191d",
+    "packages": {
+      "ritsp-ltv": "."
+    }
+  },
+  "ribergshamra": {
+    "revision": "0c3d694528a4075244c4a3d3b3f1f2e205dbf65e",
+    "packages": {
+      "ribergshamra": "crates/ribergshamra",
+      "ribergshamra-c14n": "crates/ribergshamra-c14n",
+      "ribergshamra-core": "crates/ribergshamra-core",
+      "ribergshamra-crypto": "crates/ribergshamra-crypto",
+      "ribergshamra-dsig": "crates/ribergshamra-dsig",
+      "ribergshamra-enc": "crates/ribergshamra-enc",
+      "ribergshamra-keys": "crates/ribergshamra-keys",
+      "ribergshamra-pkcs12": "crates/ribergshamra-pkcs12",
+      "ribergshamra-transforms": "crates/ribergshamra-transforms",
+      "ribergshamra-xml": "crates/ribergshamra-xml"
+    }
+  }
+}

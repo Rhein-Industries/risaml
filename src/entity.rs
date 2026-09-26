@@ -41,6 +41,8 @@ pub struct EntitySetting {
     /// decryptor once one is exposed through the public API; enable this only as
     /// an explicit compatibility exception for RustCrypto deployments that
     /// accept that risk.
+    /// The separate `crypto-legacy-rsa-decryption` feature must also be enabled;
+    /// this option alone cannot enable a disabled RustCrypto backend.
     pub allow_insecure_software_rsa_key_transport_decryption: bool,
     /// Default RelayState.
     pub relay_state: String,
