@@ -186,7 +186,7 @@ fn metadata_signature_rejects_signed_non_metadata_root() -> Result<(), Box<dyn s
     let signed = signed_non_metadata_root()?;
 
     match verify_metadata_signature_detailed(&signed, &[CERT.to_string()]) {
-        Err(SamlError::SignedReferenceMismatch) => Ok(()),
-        other => Err(format!("expected SignedReferenceMismatch, got {other:?}").into()),
+        Err(SamlError::PotentialWrappingAttack) => Ok(()),
+        other => Err(format!("expected PotentialWrappingAttack, got {other:?}").into()),
     }
 }

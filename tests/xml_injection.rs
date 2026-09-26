@@ -190,18 +190,28 @@ fn crypto_signature_escapes_reference_uri_id() -> TestResult {
 
 #[cfg(not(feature = "crypto-fips"))]
 #[test]
-fn crypto_encrypt_assertion_prefix_still_round_trips() -> TestResult {
+fn crypto_encrypt_assertion_prefix_preserves_encryption_and_decryption_policy() -> TestResult {
     let encrypted = encrypt_assertion(RESPONSE, CERT, AES_256, RSA_OAEP_MGF1P, "saml2")?;
     assert!(encrypted.contains("<saml2:EncryptedAssertion"));
 
     let key = load_private_key(PRIVKEY, None)?;
     let mut options = AssertionDecryptionOptions::default();
     options.allow_insecure_software_rsa_key_transport_decryption = true;
-    let (response, assertion) = decrypt_assertion(&encrypted, &key, options)?;
-
-    assert!(assertion.contains("Assertion"));
-    assert!(response.contains("Assertion"));
-    assert!(!response.contains("EncryptedAssertion"));
+    let result = decrypt_assertion(&encrypted, &key, options);
+    if cfg!(all(
+        feature = "crypto-rustcrypto",
+        not(feature = "crypto-legacy-rsa-decryption")
+    )) {
+        assert!(matches!(
+            result,
+            Err(SamlError::Crypto(message)) if message.contains("legacy-rsa-decryption")
+        ));
+    } else {
+        let (response, assertion) = result?;
+        assert!(assertion.contains("Assertion"));
+        assert!(response.contains("Assertion"));
+        assert!(!response.contains("EncryptedAssertion"));
+    }
     Ok(())
 }
 

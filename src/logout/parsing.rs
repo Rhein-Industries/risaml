@@ -66,6 +66,7 @@ fn parse_logout_request_inner(
     now: Option<SystemTime>,
     clock_drifts: (i64, i64),
 ) -> Result<FlowResult, SamlError> {
+    from_meta.validate_at(now.unwrap_or_else(SystemTime::now))?;
     let signing_certs = from_meta.x509_certificates(CertUse::Signing);
     flow(
         &FlowOptions {
@@ -97,6 +98,7 @@ fn parse_logout_response_inner(
     now: Option<SystemTime>,
     clock_drifts: (i64, i64),
 ) -> Result<FlowResult, SamlError> {
+    from_meta.validate_at(now.unwrap_or_else(SystemTime::now))?;
     let signing_certs = from_meta.x509_certificates(CertUse::Signing);
     flow(
         &FlowOptions {

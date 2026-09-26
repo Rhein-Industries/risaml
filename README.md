@@ -5,76 +5,24 @@
 [![MIT licensed](https://img.shields.io/crates/l/risaml)](https://github.com/Rhein-Industries/risaml/blob/main/LICENSE)
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success)](#security)
 
-> **Fork notice.** risaml is Rhein Industries' actively maintained fork of
-> [saml-rs](https://github.com/salasebas/opensaml-rs) by Sebastian Sala. It
-> starts from saml-rs 0.5.0 (upstream tag `v0.5.0`, commit `9302371`) and
-> keeps saml-rs's MIT license and copyright notice. risaml is **not affiliated
-> with or endorsed by** the upstream author: please report problems with
-> risaml to Rhein Industries, not to the saml-rs project.
->
-> - Bugs and feature requests:
->   <https://github.com/Rhein-Industries/risaml/issues>
-> - Security problems: report them privately as described in
->   [SECURITY.md](SECURITY.md); do not open a public issue.
-
 **Pure-Rust SAML 2.0** Service Provider and Identity Provider support. The
 protocol layer uses Rust XML parsing and does not require `libxml2`, `xmlsec1`,
 or an OpenSSL build chain. XML cryptography (XML-DSig, XML-Enc, C14N, detached
 message signatures) is delegated to
-[`ribergshamra`](https://github.com/Rhein-Industries/ribergshamra), Rhein
-Industries' maintained fork of bergshamra, on the
+[`ribergshamra`](https://github.com/Rhein-Industries/ribergshamra), using the
 [`riptering`](https://github.com/Rhein-Industries/riptering) crypto providers.
 The default `crypto-ribergshamra` feature selects RustCrypto and preserves the
 historical optional algorithm and PKCS#11 capabilities.
 
 ```toml
 [dependencies]
-risaml = "0.6"
+risaml = "0.7"
 
 # Crypto-free protocol layer only:
-# risaml = { version = "0.6", default-features = false }
+# risaml = { version = "0.7", default-features = false }
 ```
 
 The Rust import path is `risaml`.
-
-## How risaml differs from saml-rs 0.5.0
-
-- **Names.** The crate is `risaml` (`use risaml::...`, `cargo run -p risaml`).
-  The upstream compatibility re-export crates (`opensaml`, `samlify`,
-  `rustsaml`, `samlet`) are not part of the fork. Public types, modules and
-  all SAML protocol constants (URNs, namespaces, bindings, NameID formats,
-  status codes) are unchanged.
-- **XML security.** [ribergshamra](https://github.com/Rhein-Industries/ribergshamra)
-  0.10 replaces bergshamra 0.8 and
-  [riptering](https://github.com/Rhein-Industries/riptering) 0.6 replaces
-  kryptering 0.5, so `Key`, `KeysManager` and the other re-exported XML
-  security types come from ribergshamra. The default feature is now called
-  `crypto-ribergshamra`; `crypto-bergshamra` remains as an alias for it, and
-  the provider and capability features keep their names.
-- **RSA key size.** With the default features nothing changes. With
-  `crypto-rustcrypto` but without `crypto-legacy-algorithms`, riptering now
-  rejects RSA keys shorter than 2048 bits, as AWS-LC and FIPS already did.
-- **Project.** Package metadata points at
-  <https://github.com/Rhein-Industries/risaml>; CI runs on GitHub-hosted
-  runners and publishing is manual (the upstream release-plz automation is
-  not used).
-
-The full list is in the [changelog](CHANGELOG.md).
-
-### Migrating from saml-rs
-
-```toml
-[dependencies]
-risaml = "0.6"
-# or keep the `saml_rs::` paths in your code:
-# saml-rs = { package = "risaml", version = "0.6" }
-```
-
-With the plain `risaml` dependency, replace `saml_rs::` with `risaml::`.
-Replace `crypto-bergshamra` with `crypto-ribergshamra` in feature lists (the
-old name keeps working). Code that names bergshamra types next to risaml's
-API, for example the `Key` returned by `load_private_key`, switches to
-`ribergshamra::`. See the [0.5 to 0.6 migration guide](docs/migrations/0.5-to-0.6.md).
 
 ## Upgrading
 
@@ -168,6 +116,17 @@ round trip and the [doctested crate-root SSO
 fragment](https://docs.rs/risaml/latest/risaml/#sp-initiated-sso) for the
 compact API shape.
 
+Typed SSO and SP-initiated SLO pending requests expire after five minutes by
+default. `StartSso::pending_lifetime` and `StartSlo::pending_lifetime` set a
+named local correlation lifetime; IdP-initiated SLO defaults to its generated
+wire expiration, which a local lifetime can shorten. Completion always checks
+the stored expiry against the caller's validation clock. `RequireCache` also
+atomically records a separate completed request ID until that expiry, rejecting
+a second completion even when a peer issues a different valid response.
+Persist the expiry when restoring snapshots. Replay-disabled compatibility
+still requires the application to atomically consume browser-bound pending
+state, and must not be used for assertions carrying `OneTimeUse`.
+
 ### Identity Provider - receive and respond
 
 The IdP side mirrors the SP flow: import peer SP metadata into `SpDescriptor`,
@@ -220,6 +179,23 @@ certificates. `MetadataTrustPolicy::UnsignedForCompatibility` is available for
 legacy interoperability, but it is a compatibility exception rather than a
 production default.
 
+Imports retain `validUntil` from the entity and selected SP/IdP role. Each
+typed and raw browser-flow use checks that deadline; signature trust never
+extends metadata validity. `Metadata::validate_at` supports manual consumers
+and refresh managers. Aggregate `EntitiesDescriptor` imports remain unsupported
+and fail closed so parent expiration cannot be discarded. Refresh scheduling
+and `cacheDuration` are application concerns, distinct from hard validity.
+Signing-only and encryption-only metadata keys keep their declared purpose,
+including a sole key; keys without `use` serve both purposes. Role imports
+never borrow another role's keys or endpoints.
+
+Unknown assertion Conditions fail closed. `OneTimeUse` requires a replay
+cache and immediate use of the assertion; retained assertion data must not be
+reused for later decisions. `ProxyRestriction` is understood as a restriction
+on subsequent assertion issuance, not an extra login audience restriction.
+`SsoSession::proxy_restriction_xml` exposes it for applications implementing
+proxy issuance; the built-in SSO consumer does not reissue session assertions.
+
 The compact rustdoc flow snippets use
 `ReplayPolicy::DisabledForCompatibility` only to keep examples dependency-free.
 Production inbound validation should use `ReplayPolicy::RequireCache` with a
@@ -255,6 +231,7 @@ crypto-rustcrypto = ["dep:ribergshamra", "ribergshamra/rustcrypto"]
 crypto-aws-lc = ["dep:ribergshamra", "ribergshamra/aws-lc"]
 crypto-fips = ["dep:ribergshamra", "ribergshamra/fips"]
 crypto-legacy-algorithms = ["ribergshamra?/legacy-algorithms"]
+crypto-legacy-rsa-decryption = ["ribergshamra?/legacy-rsa-decryption"]
 crypto-post-quantum = ["ribergshamra?/post-quantum"]
 crypto-pkcs11 = ["ribergshamra?/pkcs11"]
 ```
@@ -278,6 +255,23 @@ those ribergshamra capabilities without selecting a provider. The default
 behavior; direct provider selection starts with only that provider's baseline.
 Without `crypto-legacy-algorithms`, and always with AWS-LC or FIPS, riptering
 rejects RSA keys shorter than 2048 bits.
+
+`crypto-legacy-rsa-decryption` is a separate, off-by-default compatibility
+exception for the unresolved RustCrypto RSA private-decryption timing advisory.
+Neither `crypto-legacy-algorithms` nor the default feature enables it. To retain
+RustCrypto RSA-OAEP assertion decryption, explicitly select this Cargo feature
+and the existing `XmlEncryptionPolicy` software-RSA risk option (or its raw
+equivalent). The runtime option alone now propagates `SamlError::Crypto` from
+the disabled backend; default runtime policy still returns `Unsupported`.
+The exception does not fix RUSTSEC-2023-0071. RSA encryption, signing and
+verification remain available, and the accepted compatibility wire format is
+unchanged. Non-FIPS AWS-LC decryption is unaffected; FIPS approval restrictions
+remain in force.
+
+The dependency minimum is `ribergshamra` 0.11.0, which uses `riptering` 0.7
+and exposes `legacy-rsa-decryption`. Refresh consumer lockfiles when upgrading;
+applications that depend directly on these crates must use matching release
+lines. CI validates the published registry graph with `--locked`.
 
 ribergshamra supports AWS-LC and FIPS on Linux x86_64/aarch64. The `risaml`
 provider matrix currently validates Linux x86_64; Linux aarch64 is an upstream
@@ -312,11 +306,14 @@ With `crypto-ribergshamra` enabled:
 - Signed-reference placement checks help mitigate XML Signature Wrapping (XSW).
 - XML-Enc support is available. On the default RustCrypto provider, software
   RSA key-transport decryption is gated off by default and requires an
-  explicit compatibility opt-in through
+  explicit `crypto-legacy-rsa-decryption` feature and runtime opt-in through
   [`XmlEncryptionPolicy`](https://docs.rs/risaml/latest/risaml/struct.XmlEncryptionPolicy.html).
   AWS-LC decrypts RSA-OAEP with the default options.
 
 ## Security
+
+Report security problems privately as described in [SECURITY.md](SECURITY.md);
+do not open a public issue.
 
 `risaml` is pre-1.0 and has not had an external security audit. Review the
 crate, configuration, and peer metadata trust model before production use.
@@ -338,11 +335,16 @@ Security-sensitive defaults and checks include:
 - XML-Enc software RSA key-transport decryption disabled by default on
   RustCrypto because that backend, reached through `ribergshamra` / `riptering`,
   is affected by RUSTSEC-2023-0071. AWS-LC and FIPS do not apply this gate.
+  The separate compile-time exception and runtime risk policy are both required
+  for RustCrypto decryption.
 
 Schema validation is optional defense in depth via
 `context::set_schema_validator`.
 
 ## Development
+
+Report bugs and feature requests in
+[GitHub Issues](https://github.com/Rhein-Industries/risaml/issues).
 
 ```sh
 cargo fmt --all --check
@@ -356,7 +358,56 @@ cargo nextest run -p risaml --no-default-features --features crypto-rustcrypto
 # AWS-LC/FIPS checks run on supported Linux runners; see .github/workflows/ci.yml.
 ```
 
+## Compatibility and migration
+
+Compatibility notes for applications moving from saml-rs 0.5.0.
+
+- **Names.** The crate is `risaml` (`use risaml::...`, `cargo run -p risaml`).
+  The compatibility re-export crates (`opensaml`, `samlify`,
+  `rustsaml`, `samlet`) are not included. Public modules and
+  all SAML protocol constants (URNs, namespaces, bindings, NameID formats,
+  status codes) are unchanged.
+- **XML security.** [ribergshamra](https://github.com/Rhein-Industries/ribergshamra)
+  0.11 replaces bergshamra 0.8 and
+  [riptering](https://github.com/Rhein-Industries/riptering) 0.7 replaces
+  kryptering 0.5, so `Key`, `KeysManager` and the other re-exported XML
+  security types come from ribergshamra. The default feature is now called
+  `crypto-ribergshamra`; `crypto-bergshamra` remains as an alias for it, and
+  the provider and capability features keep their names.
+- **Software RSA key size.** The default RustCrypto software configuration
+  retains historical RSA key sizes with `crypto-legacy-algorithms`. Without
+  that feature, RustCrypto rejects RSA keys shorter than 2048 bits, as AWS-LC
+  and FIPS already did. PKCS#11 has a separate key-admission policy described
+  in the [migration guide](docs/migrations/0.6-to-0.7.md).
+- **Project.** Package metadata points at
+  <https://github.com/Rhein-Industries/risaml>; CI runs on GitHub-hosted
+  runners and publishing is manual (the upstream release-plz automation is
+  not used).
+
+The full list is in the [changelog](CHANGELOG.md).
+
+### Migrating from saml-rs
+
+```toml
+[dependencies]
+risaml = "0.7"
+# or keep the `saml_rs::` paths in your code:
+# saml-rs = { package = "risaml", version = "0.7" }
+```
+
+With the plain `risaml` dependency, replace `saml_rs::` with `risaml::`.
+Replace `crypto-bergshamra` with `crypto-ribergshamra` in feature lists (the
+old name keeps working). Code that names bergshamra types next to risaml's
+API, for example the `Key` returned by `load_private_key`, switches to
+`ribergshamra::`. The [0.5 to 0.6 guide](docs/migrations/0.5-to-0.6.md) covers
+the initial crate rename; then apply the
+[0.6 to 0.7 guide](docs/migrations/0.6-to-0.7.md) for security policy changes.
+Review the [XML processing limits](https://github.com/Rhein-Industries/ribergshamra/blob/v0.11.0/docs/security-limits.md)
+when upgrading: the delegated XML backend applies fixed resource budgets and
+corrected canonicalization and CRL policies.
+
 ## License
 
-[MIT](LICENSE). risaml keeps saml-rs's copyright notice and adds Rhein
-Industries' line for the fork's modifications.
+[MIT](LICENSE).[^history]
+
+[^history]: Started from [saml-rs](https://github.com/salasebas/opensaml-rs) by [Sebastian Sala](https://github.com/salasebas), version 0.5.0 (tag `v0.5.0`, commit `9302371`).

@@ -122,6 +122,8 @@ pub struct FlowOptions<'a> {
     /// Enforced only for `crypto-rustcrypto`, where that path reaches
     /// `RUSTSEC-2023-0071`-affected `rsa` code when an attacker can observe
     /// timing. AWS-LC and FIPS ignore this flag.
+    /// RustCrypto also requires the separate `crypto-legacy-rsa-decryption`
+    /// feature; this option alone cannot enable a disabled backend.
     pub allow_insecure_software_rsa_key_transport_decryption: bool,
     /// Clock drift tolerance `(not_before_ms, not_on_or_after_ms)`.
     pub clock_drifts: (i64, i64),

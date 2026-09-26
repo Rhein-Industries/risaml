@@ -2,14 +2,22 @@ use risaml::constants::{
     data_encryption_algorithm, digest_algorithm, key_encryption_algorithm, name_id_format,
     signature_algorithm, transform_algorithm,
 };
-use risaml::xml::XmlLimits;
 use risaml::{
-    AcsEndpoint, AssertionSignaturePolicy, AuthnRequestSigningPolicy, AuthnRequestValidationPolicy,
-    CertificatePem, Credentials, DataEncryptionAlgorithm, DigestAlgorithm, EntityId, EntitySetting,
-    IdpConfig, IdpDescriptor, IdpMetadataConfig, KeyEncryptionAlgorithm, MetadataTrustPolicy,
-    NameIdFormat, Passphrase, PrivateKeyPem, ResponseSignaturePolicy, SamlError,
-    SignatureAlgorithm, SpConfig, SpDescriptor, SpMetadataConfig, SsoEndpoint, TransformAlgorithm,
-    XmlEncryptionPolicy,
+    AcsEndpoint, CertificatePem, DataEncryptionAlgorithm, DigestAlgorithm, EntityId, EntitySetting,
+    IdpDescriptor, KeyEncryptionAlgorithm, MetadataTrustPolicy, NameIdFormat, Passphrase,
+    PrivateKeyPem, SamlError, SignatureAlgorithm, SpConfig, SpDescriptor, SpMetadataConfig,
+    TransformAlgorithm, XmlEncryptionPolicy,
+};
+
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
+use risaml::{
+    xml::XmlLimits, AssertionSignaturePolicy, AuthnRequestSigningPolicy,
+    AuthnRequestValidationPolicy, Credentials, IdpConfig, IdpMetadataConfig,
+    ResponseSignaturePolicy, SsoEndpoint,
 };
 
 const IDP_METADATA: &str = include_str!("fixtures/idpmeta.xml");
@@ -163,6 +171,13 @@ fn typed_config_name_id_formats_return_existing_uri_constants() {
     );
 }
 
+// These conversions select signature-required policies. Crypto-free builds
+// intentionally reject them; tests/no_default_features.rs checks that refusal.
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 #[test]
 fn typed_config_sp_config_converts_selected_settings() -> Result<(), Box<dyn std::error::Error>> {
     let mut config = SpConfig::new(
@@ -236,6 +251,11 @@ fn typed_config_sp_config_converts_selected_settings() -> Result<(), Box<dyn std
     Ok(())
 }
 
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 #[test]
 fn typed_config_idp_config_converts_authn_request_policy() -> Result<(), Box<dyn std::error::Error>>
 {

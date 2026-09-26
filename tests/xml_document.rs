@@ -12,6 +12,15 @@ const AUTHN_REQUEST: &str = concat!(
     "</samlp:AuthnRequest>",
 );
 
+#[test]
+fn namespace_declarations_do_not_shadow_consumed_attributes(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let xml = AUTHN_REQUEST.replace("ID=\"_request\"", "xmlns:ID=\"urn:prefix\" ID=\"_request\"");
+    let result = flow(&options(Binding::Post), &post_request(&xml))?;
+    assert_eq!(result.extract.get_str("request.id"), Some("_request"));
+    Ok(())
+}
+
 fn options(binding: Binding) -> FlowOptions<'static> {
     let mut options = FlowOptions::default();
     options.binding = Some(binding);
@@ -70,5 +79,47 @@ fn post_flow_accepts_xml_misc_around_document_element() -> Result<(), Box<dyn st
     );
 
     flow(&options(Binding::Post), &post_request(&xml))?;
+    Ok(())
+}
+
+#[test]
+fn document_parser_rejects_unclosed_elements() {
+    for xml in ["<Root>", "<Root><Child/>", "<Root/><Unclosed>"] {
+        assert!(matches!(
+            risaml::xml::dom::parse(xml),
+            Err(SamlError::Xml(_))
+        ));
+        assert!(matches!(
+            risaml::xml::dom::parse_roots(xml),
+            Err(SamlError::Xml(_))
+        ));
+    }
+}
+
+#[test]
+fn post_flow_rejects_unclosed_trailing_element() -> Result<(), Box<dyn std::error::Error>> {
+    let unclosed = AUTHN_REQUEST
+        .strip_suffix("</samlp:AuthnRequest>")
+        .ok_or("missing closing test element")?;
+    let xml = format!("{AUTHN_REQUEST}{unclosed}");
+    let error = flow(&options(Binding::Post), &post_request(&xml))
+        .err()
+        .ok_or("POST flow unexpectedly accepted an unclosed trailing element")?;
+
+    assert!(matches!(error, SamlError::Xml(_)));
+    Ok(())
+}
+
+#[test]
+fn redirect_flow_rejects_unclosed_trailing_element() -> Result<(), Box<dyn std::error::Error>> {
+    let unclosed = AUTHN_REQUEST
+        .strip_suffix("</samlp:AuthnRequest>")
+        .ok_or("missing closing test element")?;
+    let xml = format!("{AUTHN_REQUEST}{unclosed}");
+    let error = flow(&options(Binding::Redirect), &redirect_request(&xml)?)
+        .err()
+        .ok_or("Redirect flow unexpectedly accepted an unclosed trailing element")?;
+
+    assert!(matches!(error, SamlError::Xml(_)));
     Ok(())
 }

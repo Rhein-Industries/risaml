@@ -431,15 +431,22 @@ fn start_slo_impl(
         options.relay_state,
         options.binding,
         peer_entity_id.clone(),
-    )?;
+    )?
+    .with_issue_instant(SamlInstant::try_new(created.issue_instant)?);
     if matches!(role, StartSloRole::SessionAuthority { .. }) {
-        pending = pending.with_issue_instant(SamlInstant::try_new(created.issue_instant)?);
         let expiration = created.not_on_or_after.ok_or_else(|| {
             SamlError::Invalid(
                 "Session Authority LogoutRequest is missing its generated expiration".into(),
             )
         })?;
         pending = pending.with_expiration(SamlInstant::try_new(expiration)?);
+    }
+    let lifetime = options.pending_lifetime.or_else(|| {
+        matches!(role, StartSloRole::SessionParticipant)
+            .then_some(std::time::Duration::from_secs(5 * 60))
+    });
+    if let Some(lifetime) = lifetime {
+        pending = pending.with_local_lifetime(std::time::SystemTime::now(), lifetime)?;
     }
     Ok(Started { pending, outbound })
 }
@@ -451,6 +458,7 @@ fn receive_slo_impl(
     input: BrowserInput<LogoutRequest>,
     mut validation: SamlValidationContext<'_>,
 ) -> Result<Received<LogoutRequest>, SamlError> {
+    local_metadata.validate_at(validation.now())?;
     let relay_state = relay_state_from_input(&input)?;
     let binding = LogoutBinding::try_from(input_binding(&input))?;
     let request = HttpRequest::try_from(input)?;
@@ -510,6 +518,9 @@ fn finish_slo_impl(
     input: BrowserInput<LogoutResponse>,
     mut validation: SamlValidationContext<'_>,
 ) -> Result<LogoutCompleted, SamlError> {
+    local_metadata.validate_at(validation.now())?;
+    pending.validate_at(validation.now())?;
+    validation.require_pending_expiration(pending.completion_deadline()?)?;
     ensure_entity_id(pending.peer_entity_id(), peer_entity_id)?;
     ensure_logout_response_binding(input_binding(&input), pending.response_binding())?;
     ensure_relay_state(pending.relay_state(), &relay_state_from_input(&input)?)?;
@@ -531,6 +542,10 @@ fn finish_slo_impl(
     )?;
     validation
         .check_and_store_message_replay(ReplayKey::LogoutResponseId(response.id().clone()))?;
+    validation.check_and_store_message_replay_until(
+        ReplayKey::CompletedLogoutRequestId(pending.id().clone()),
+        pending.completion_deadline()?,
+    )?;
     Ok(LogoutCompleted::from_response(
         peer_entity_id.clone(),
         response,

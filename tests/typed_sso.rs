@@ -23,7 +23,7 @@ use risaml::{
     SsoEndpoint, SsoResponse, SsoResponseBinding, StartSso, Subject, TemplatePolicy,
 };
 #[cfg(not(feature = "crypto-fips"))]
-use risaml::{XmlEncryptionPolicy, XmlPolicy};
+use risaml::{DataEncryptionAlgorithm, XmlEncryptionPolicy, XmlPolicy};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use url::Url;
 
@@ -809,28 +809,64 @@ fn typed_sign_response_satisfies_required_response_signature(
 #[test]
 fn typed_encrypted_cbc_response_is_signed_by_default() -> Result<(), Box<dyn std::error::Error>> {
     let sp = Saml::sp(encrypted_sp_config()?)?;
-    let idp = Saml::idp(encrypted_idp_config()?)?;
-    let (sp_descriptor, idp_descriptor) = descriptors(&sp, &idp)?;
-    let started = sp.start_sso(&idp_descriptor, StartSso::post())?;
-    let received = idp.receive_sso(
-        &sp_descriptor,
-        BrowserInput::<AuthnRequest>::post(post_fields(&started.outbound)?),
-        validation(),
-    )?;
-    let response = idp.respond_sso(&sp_descriptor, &received, subject(), RespondSso::post())?;
-    let fields = post_fields(&response)?;
-    let xml = response_xml_from_fields(&fields)?;
-    if !xml.contains("<ds:Signature") {
-        return Err("expected CBC-encrypted Response to carry an outer signature".into());
-    }
+    for algorithm in [
+        DataEncryptionAlgorithm::Aes256,
+        DataEncryptionAlgorithm::Custom("http://www.w3.org/2001/04/xmlenc#aes192-cbc".into()),
+    ] {
+        let algorithm_uri = algorithm.as_uri().to_string();
+        let mut idp_config = encrypted_idp_config()?;
+        idp_config.algorithms.data_encryption = algorithm;
+        let idp = Saml::idp(idp_config)?;
+        let (sp_descriptor, idp_descriptor) = descriptors(&sp, &idp)?;
+        let started = sp.start_sso(&idp_descriptor, StartSso::post())?;
+        let received = idp.receive_sso(
+            &sp_descriptor,
+            BrowserInput::<AuthnRequest>::post(post_fields(&started.outbound)?),
+            validation(),
+        )?;
+        let response = idp.respond_sso(&sp_descriptor, &received, subject(), RespondSso::post())?;
+        let fields = post_fields(&response)?;
+        let xml = response_xml_from_fields(&fields)?;
+        if !xml.contains("<ds:Signature") {
+            return Err(format!(
+                "expected {algorithm_uri} encrypted Response to carry an outer signature"
+            )
+            .into());
+        }
 
-    let session = sp.finish_sso(
-        &idp_descriptor,
-        &started.pending,
-        BrowserInput::<SsoResponse>::post(fields),
-        validation(),
-    )?;
-    assert_eq!(session.name_id().value(), "alice@example.com");
+        let mut cache = MemoryReplayCache::default();
+        let result = sp.finish_sso(
+            &idp_descriptor,
+            &started.pending,
+            BrowserInput::<SsoResponse>::post(fields.clone()),
+            validation_with_cache(&mut cache),
+        );
+        if cfg!(all(
+            feature = "crypto-rustcrypto",
+            not(feature = "crypto-legacy-rsa-decryption")
+        )) {
+            assert!(matches!(
+                result,
+                Err(SamlError::Crypto(message)) if message.contains("legacy-rsa-decryption")
+            ));
+            assert!(cache.seen.is_empty());
+            // A refused decryption must not consume response/assertion or
+            // completed-request replay keys. Retrying reaches the same gate.
+            let retry = sp.finish_sso(
+                &idp_descriptor,
+                &started.pending,
+                BrowserInput::<SsoResponse>::post(fields),
+                validation_with_cache(&mut cache),
+            );
+            assert!(matches!(
+                retry,
+                Err(SamlError::Crypto(message)) if message.contains("legacy-rsa-decryption")
+            ));
+            assert!(cache.seen.is_empty());
+        } else {
+            assert_eq!(result?.name_id().value(), "alice@example.com");
+        }
+    }
     Ok(())
 }
 
@@ -1297,6 +1333,38 @@ fn typed_facade_checks_replay_cache() -> Result<(), Box<dyn std::error::Error>> 
         }
         other => Err(format!("expected ReplayDetected, got {other:?}").into()),
     }
+}
+
+#[test]
+fn typed_facade_consumes_pending_request_across_distinct_signed_responses(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let exchange = start_receive_respond()?;
+    let second_response = exchange.idp.respond_sso(
+        &exchange.sp_descriptor,
+        &exchange.received,
+        subject(),
+        RespondSso::post(),
+    )?;
+    let mut cache = MemoryReplayCache::default();
+    let first = exchange.sp.finish_sso(
+        &exchange.idp_descriptor,
+        &exchange.pending,
+        BrowserInput::<SsoResponse>::post(exchange.response_fields),
+        validation_with_cache(&mut cache),
+    )?;
+    assert_ne!(first.response_id().as_str(), second_response.id().as_str());
+    let completion_key = format!(
+        "completed_authn_request_id:{}",
+        exchange.pending.id().as_str()
+    );
+    assert!(cache.seen.contains_key(&completion_key));
+    assert!(matches!(exchange.sp.finish_sso(
+        &exchange.idp_descriptor,
+        &exchange.pending,
+        BrowserInput::<SsoResponse>::post(post_fields(&second_response)?),
+        validation_with_cache(&mut cache),
+    ), Err(SamlError::ReplayDetected { key }) if key == completion_key));
+    Ok(())
 }
 
 #[test]

@@ -20,8 +20,9 @@ cargo install --locked cargo-nextest
 ```
 
 risaml requires Rust 1.88. The default `crypto-ribergshamra` feature
-(compatibility alias `crypto-bergshamra`) uses `ribergshamra` 0.10 with
-`riptering` 0.6 and preserves the RustCrypto-backed defaults.
+(compatibility alias `crypto-bergshamra`) uses `ribergshamra` 0.11 with
+`riptering` 0.7. Software RSA key-transport decryption requires the separate
+feature and runtime risk exception documented in the README.
 
 ## Tests
 

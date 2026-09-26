@@ -252,6 +252,7 @@ impl XmlEncryptionPolicy {
 
     /// Explicitly allow RustCrypto software RSA key-transport decryption despite
     /// `RUSTSEC-2023-0071` timing-risk concerns in that backend.
+    /// Also requires the separate `crypto-legacy-rsa-decryption` feature.
     pub fn allow_insecure_software_rsa_key_transport_decryption() -> Self {
         Self {
             allow_insecure_software_rsa_key_transport_decryption: true,
@@ -260,6 +261,7 @@ impl XmlEncryptionPolicy {
     }
 
     /// Return a copy with the software RSA key-transport risk explicitly allowed.
+    /// The `crypto-legacy-rsa-decryption` feature is also required on RustCrypto.
     pub fn with_insecure_software_rsa_key_transport_decryption_allowed(mut self) -> Self {
         self.allow_insecure_software_rsa_key_transport_decryption = true;
         self
@@ -277,8 +279,11 @@ impl XmlEncryptionPolicy {
 /// Software RSA key-transport decryption is disabled by default on the
 /// RustCrypto provider because that backend, reached through `ribergshamra` /
 /// `riptering`, is affected by `RUSTSEC-2023-0071`. Enable it only as an
-/// explicit compatibility exception for a RustCrypto deployment that accepts
-/// that risk. AWS-LC and FIPS ignore this opt-in.
+/// explicit exception with the `crypto-legacy-rsa-decryption` Cargo feature
+/// and the runtime policy below. The runtime policy alone cannot enable a
+/// disabled backend. This is a library security policy, not a SAML wire rule;
+/// enabling the exception accepts the unresolved timing risk. AWS-LC and FIPS
+/// ignore this opt-in and retain their existing algorithm approval policies.
 ///
 /// ```
 /// use risaml::{AcsEndpoint, EntityId, SpConfig, XmlEncryptionPolicy, XmlPolicy};

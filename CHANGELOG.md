@@ -8,7 +8,67 @@ risaml was forked from, is kept unchanged below.
 The format is based on Keep a Changelog, and this project follows Semantic
 Versioning while the API is still pre-1.0.
 
-## Unreleased
+## 0.7.0 — 2026-09-26
+
+### Changed
+
+- **Breaking:** require ribergshamra 0.11.0 on riptering 0.7 and ritsp-ltv 0.6.
+  Consumers that name XML security types directly must update their matching
+  dependencies. The MSRV remains Rust 1.88. The release intentionally tightens
+  security acceptance and the software RSA decryption default; see the
+  [0.6 to 0.7 migration guide](docs/migrations/0.6-to-0.7.md).
+
+### Fixed
+
+- Disable RustCrypto RSA key-transport decryption in the backend by default.
+  Restoring it requires the separate `crypto-legacy-rsa-decryption` feature and
+  the existing explicit runtime risk option; `crypto-legacy-algorithms` does
+  not enable it. This is an exception for unresolved RUSTSEC-2023-0071, not a
+  timing fix. Encryption/signatures, AWS-LC policy and wire formats are unchanged.
+- Reject unsupported assertion Conditions instead of treating indeterminate
+  conditions as valid. Recognize OneTimeUse and ProxyRestriction separately;
+  typed OneTimeUse processing requires assertion replay storage.
+- Retain entity and imported role metadata `validUntil`, and enforce it at
+  inbound/outbound use after storage. Role-specific imports isolate SP/IdP
+  certificates and endpoints, and honor each key's signing/encryption purpose.
+- Bound typed pending SSO and SP-initiated SLO requests to five minutes by
+  default, with named `pending_lifetime` options. IdP-initiated SLO retains its
+  generated wire deadline unless explicitly shortened. Enforce pending expiry
+  and cache completed request IDs with `RequireCache`; restored cached pending
+  requests must carry an expiration.
+- Keep qualified XML attributes distinct from unqualified consumed attributes,
+  exclude namespace declarations from extraction, and reject SAML signature
+  `ds:Object` elements before crypto-provider processing.
+- Reject incomplete XML documents and raw-DEFLATE streams while retaining
+  existing parser and inflated-output limits.
+- Require content-preserving XML signature reference transforms and apply
+  same-document reference preflight to nested XML-DSig signatures before
+  handing the document to the crypto provider. Filtering and unknown reference
+  transforms now fail closed; supported canonicalization transforms remain
+  accepted.
+- Reject XML-DSig signatures outside the signed message/metadata root or a
+  direct Response assertion before signature detection or crypto-provider
+  processing, including when no signature is present in an expected position.
+- Return validation errors for malformed Unicode certificates and
+  unrepresentable clock-skew bounds instead of panicking.
+- Apply the existing CBC Response integrity policy to custom AES-192-CBC
+  algorithms as well as the other supported CBC algorithms.
+
+### Performance
+
+- Reuse the most recent assertion shortcut DOM during field extraction,
+  avoid normalization copies for compact base64 input, and clone only the
+  requested first metadata certificate.
+- Add a local fixture microbenchmark example for XML parsing and cloning,
+  field extraction, binding encoding/decoding, and metadata certificate lookup.
+
+### Validation and packaging
+
+- Run complete default, explicit software RSA exception and crypto-free suites
+  on Linux, Windows and macOS, plus Linux RustCrypto, AWS-LC and FIPS provider
+  suites. CI and dependency-policy checks use the published, locked graph.
+- Include the linked security policy, migration guidance and formatter/Clippy
+  configuration in the crate, alongside the existing license and test fixtures.
 
 ## 0.6.0 — first risaml release — 2026-09-24
 

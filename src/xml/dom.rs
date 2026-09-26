@@ -81,7 +81,8 @@ impl Default for XmlLimits {
 pub struct Node {
     /// Local element name (namespace prefix stripped).
     pub local_name: String,
-    /// Attributes as `(local-name, unescaped-value)` pairs.
+    /// Attributes as `(name, unescaped-value)` pairs. Qualified names retain
+    /// their prefix; namespace declarations are excluded.
     pub attrs: Vec<(String, String)>,
     /// Child elements in document order.
     pub children: Vec<Node>,
@@ -94,7 +95,8 @@ pub struct Node {
 }
 
 impl Node {
-    /// Look up an attribute by local name.
+    /// Look up an attribute by its exact name (unqualified SAML attributes
+    /// cannot be shadowed by namespace declarations or qualified aliases).
     pub fn attr(&self, name: &str) -> Option<&str> {
         self.attrs
             .iter()
@@ -156,15 +158,15 @@ fn read_attrs(
     limits: XmlLimits,
 ) -> Result<Vec<(String, String)>, SamlError> {
     let mut out = Vec::new();
-    for attr in e.attributes() {
-        if out.len() >= limits.max_attributes_per_element {
+    for (attribute_index, attr) in e.attributes().enumerate() {
+        if attribute_index >= limits.max_attributes_per_element {
             return Err(limit_exceeded(
                 "max XML attributes per element",
                 limits.max_attributes_per_element,
             ));
         }
         let attr = attr.map_err(|err| SamlError::Xml(err.to_string()))?;
-        let key = local_name_str(attr.key);
+        let key = String::from_utf8_lossy(attr.key.as_ref()).into_owned();
         let value = attr
             .decoded_and_normalized_value(XmlVersion::Implicit1_0, e.decoder())
             .map_err(|err| SamlError::Xml(err.to_string()))?
@@ -174,6 +176,9 @@ fn read_attrs(
                 "max XML attribute value bytes",
                 limits.max_attribute_value_bytes,
             ));
+        }
+        if attr.key.as_namespace_binding().is_some() {
+            continue;
         }
         out.push((key, value));
     }
@@ -341,7 +346,14 @@ fn parse_roots_inner(
             Event::DocType(_) => {
                 return Err(SamlError::Xml("DOCTYPE is not allowed".into()));
             }
-            Event::Eof => break,
+            Event::Eof => {
+                // XML 1.0 section 3.1 requires an end tag for every start tag.
+                // quick-xml's event reader does not check this at EOF.
+                if !stack.is_empty() {
+                    return Err(SamlError::Xml("unclosed document element".into()));
+                }
+                break;
+            }
             _ => {}
         }
     }

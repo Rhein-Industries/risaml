@@ -60,6 +60,15 @@ pub fn login_response_fields(assertion: &str) -> Vec<ExtractorField> {
         ExtractorField::new("conditions", &["Assertion", "Conditions"])
             .attrs(&["NotBefore", "NotOnOrAfter"])
             .with_shortcut(assertion),
+        ExtractorField::new("oneTimeUse", &["Assertion", "Conditions", "OneTimeUse"])
+            .with_context()
+            .with_shortcut(assertion),
+        ExtractorField::new(
+            "proxyRestriction",
+            &["Assertion", "Conditions", "ProxyRestriction"],
+        )
+        .with_context()
+        .with_shortcut(assertion),
         ExtractorField::new("response", &["Response"]).attrs(&[
             "ID",
             "IssueInstant",

@@ -5,11 +5,17 @@ use risaml::{
     AudienceValidationPolicy, AuthnRequestSigningPolicy, AuthnRequestValidationPolicy,
     CertificatePem, Credentials, DataEncryptionAlgorithm, DigestAlgorithm, EntityId, EntitySetting,
     IdpConfig, IdpMetadataConfig, IdpValidationPolicy, KeyEncryptionAlgorithm, LogoutPolicy,
-    LogoutSignaturePolicy, NameIdCreationPolicy, Passphrase, PrivateKeyPem,
-    ResponseSignaturePolicy, SamlError, SignatureAlgorithm, SloEndpoint, SpConfig,
-    SpMetadataConfig, SpValidationPolicy, SsoEndpoint, TemplatePolicy, TransformAlgorithm,
-    XmlEncryptionPolicy, XmlPolicy,
+    LogoutSignaturePolicy, Passphrase, PrivateKeyPem, ResponseSignaturePolicy, SamlError,
+    SignatureAlgorithm, SloEndpoint, SpConfig, SpMetadataConfig, SpValidationPolicy, SsoEndpoint,
+    TemplatePolicy, TransformAlgorithm, XmlPolicy,
 };
+
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
+use risaml::{NameIdCreationPolicy, XmlEncryptionPolicy};
 
 fn signing_credentials() -> Credentials {
     Credentials {
@@ -39,7 +45,8 @@ fn sp_builder_and_struct_literal_reach_same_config() -> Result<(), Box<dyn std::
     let acs = AcsEndpoint::post("https://sp.example.com/acs")?;
     let slo = SloEndpoint::post("https://sp.example.com/slo")?;
     let credentials = signing_credentials();
-    let validation = SpValidationPolicy::strict();
+    // This tests config representation, including protocol-only builds.
+    let validation = SpValidationPolicy::compatibility();
 
     let builder = SpConfig::builder(entity_id.clone())
         .acs_endpoint(acs.clone())
@@ -78,7 +85,7 @@ fn idp_builder_and_struct_literal_reach_same_config() -> Result<(), Box<dyn std:
     let entity_id = EntityId::try_new("https://idp.example.com/metadata")?;
     let sso = SsoEndpoint::redirect("https://idp.example.com/sso")?;
     let slo = SloEndpoint::post("https://idp.example.com/slo")?;
-    let validation = IdpValidationPolicy::strict();
+    let validation = IdpValidationPolicy::compatibility();
 
     let builder = IdpConfig::builder(entity_id.clone())
         .sso_endpoint(sso.clone())
@@ -128,6 +135,7 @@ fn idp_config_defaults_issuance_lifetime_to_five_minutes() -> Result<(), Box<dyn
 fn idp_builder_sets_issuance_lifetime() -> Result<(), Box<dyn std::error::Error>> {
     let config = IdpConfig::builder(EntityId::try_new("https://idp.example.com/metadata")?)
         .sso_endpoint(SsoEndpoint::post("https://idp.example.com/sso")?)
+        .validation(IdpValidationPolicy::compatibility())
         .issuance_lifetime(Duration::from_secs(600))
         .build()?;
 
@@ -166,6 +174,13 @@ fn idp_config_rejects_unrepresentable_issuance_lifetime() -> Result<(), Box<dyn 
     Ok(())
 }
 
+// Strict signature policies require a provider; no_default_features checks
+// that these same defaults fail closed with Unsupported when none is selected.
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 #[test]
 fn builders_default_to_strict_validation() -> Result<(), Box<dyn std::error::Error>> {
     let sp = SpConfig::builder(EntityId::try_new("https://sp.example.com/metadata")?)
@@ -324,6 +339,7 @@ fn sp_builder_sets_policy_setters() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = SpConfig::builder(EntityId::try_new("https://sp.example.com/metadata")?)
         .acs_endpoint(AcsEndpoint::post("https://sp.example.com/acs")?)
+        .validation(SpValidationPolicy::compatibility())
         .credentials(signing_credentials())
         .elements_order(elements_order.clone())
         .algorithms(algorithms.clone())
@@ -364,6 +380,7 @@ fn idp_builder_sets_policy_setters() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = IdpConfig::builder(EntityId::try_new("https://idp.example.com/metadata")?)
         .sso_endpoint(SsoEndpoint::redirect("https://idp.example.com/sso")?)
+        .validation(IdpValidationPolicy::compatibility())
         .elements_order(elements_order.clone())
         .algorithms(algorithms.clone())
         .xml(xml)
@@ -467,6 +484,12 @@ fn idp_builder_rejects_missing_sso() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// Without a provider, capability rejection precedes credential validation.
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 #[test]
 fn sp_builder_requires_signing_credentials_when_authn_requests_are_signed(
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -478,6 +501,11 @@ fn sp_builder_requires_signing_credentials_when_authn_requests_are_signed(
     Ok(())
 }
 
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 #[test]
 fn sp_builder_requires_signing_certificate_when_authn_requests_are_signed(
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -507,6 +535,11 @@ fn sp_builder_allows_protocol_only_compatibility_without_credentials(
     Ok(())
 }
 
+#[cfg(any(
+    feature = "crypto-rustcrypto",
+    feature = "crypto-aws-lc",
+    feature = "crypto-fips"
+))]
 #[test]
 fn sp_builder_requires_decryption_key_when_encrypted_assertions_are_selected(
 ) -> Result<(), Box<dyn std::error::Error>> {

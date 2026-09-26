@@ -97,11 +97,17 @@ impl Saml<Sp> {
             response_binding,
             idp.entity_id().clone(),
         )?
-        .with_request_binding(options.binding);
+        .with_request_binding(options.binding)
+        .with_local_lifetime(std::time::SystemTime::now(), options.pending_lifetime)?;
         Ok(Started { pending, outbound })
     }
 
     /// Finish SP-initiated SSO using stored pending AuthnRequest state.
+    ///
+    /// Expiry is checked before response processing. `RequireCache` requires
+    /// a stored pending expiry and atomically records completion until that
+    /// deadline. Replay-disabled compatibility requires caller-owned atomic
+    /// consumption of the browser-bound pending state.
     ///
     /// # Errors
     ///
@@ -144,6 +150,8 @@ impl Saml<Sp> {
         input: BrowserInput<SsoResponse>,
         mut validation: SamlValidationContext<'_>,
     ) -> Result<SsoSession, SamlError> {
+        pending.validate_at(validation.now())?;
+        validation.require_pending_expiration(pending.completion_deadline()?)?;
         ensure_entity_id(pending.idp_entity_id(), idp.entity_id())?;
         ensure_sso_response_binding(input_binding(&input), pending.response_binding())?;
         ensure_relay_state(pending.relay_state(), &relay_state_from_input(&input)?)?;
@@ -164,6 +172,10 @@ impl Saml<Sp> {
             )?;
         let session = SsoSession::try_from(flow)?;
         session.check_and_store_replay(&mut validation)?;
+        validation.check_and_store_message_replay_until(
+            crate::model::ReplayKey::CompletedAuthnRequestId(pending.request_id().clone()),
+            pending.completion_deadline()?,
+        )?;
         Ok(session)
     }
 

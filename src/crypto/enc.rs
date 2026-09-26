@@ -11,7 +11,7 @@ use ribergshamra::keys::Key;
 use ribergshamra::{decrypt, encrypt, EncContext, KeysManager};
 
 const ENC: &str = "http://www.w3.org/2001/04/xmlenc#";
-const SOFTWARE_RSA_DECRYPTION_DISABLED: &str = "XML-Enc RSA key-transport decryption with software private keys is disabled by default because the bundled RustCrypto rsa backend is affected by RUSTSEC-2023-0071. Enable allow_insecure_software_rsa_key_transport_decryption only as an explicit compatibility exception.";
+const SOFTWARE_RSA_DECRYPTION_DISABLED: &str = "XML-Enc RSA key-transport decryption with software private keys is disabled by default because the bundled RustCrypto rsa backend is affected by RUSTSEC-2023-0071. Both the crypto-legacy-rsa-decryption feature and allow_insecure_software_rsa_key_transport_decryption option are required for an explicit compatibility exception.";
 
 /// Options for XML-Enc assertion decryption.
 #[derive(Debug, Clone, Copy, Default)]
@@ -23,6 +23,8 @@ pub struct AssertionDecryptionOptions {
     /// backend reaches `RUSTSEC-2023-0071`-affected `rsa` code when an attacker
     /// can observe timing. Keep this `false` unless the caller has a
     /// deployment-specific reason to accept that risk.
+    /// The separate, off-by-default `crypto-legacy-rsa-decryption` feature is
+    /// also required; this runtime flag cannot enable a disabled backend.
     ///
     /// AWS-LC and FIPS builds use `aws-lc-rs` for RSA-OAEP and ignore this
     /// flag. FIPS still rejects algorithms outside its approved set, including
@@ -175,6 +177,7 @@ mod tests {
     const SP_CERT: &str = include_str!("../../tests/fixtures/key/sp_signing_cert.cer");
     const RESPONSE: &str = include_str!("../../tests/fixtures/response.xml");
 
+    #[cfg(any(feature = "crypto-aws-lc", feature = "crypto-legacy-rsa-decryption"))]
     #[test]
     fn encrypt_then_decrypt_round_trip() -> Result<(), Box<dyn std::error::Error>> {
         let encrypted = encrypt_assertion(RESPONSE, SP_CERT, AES_256, RSA_OAEP_MGF1P, "saml")?;
@@ -192,6 +195,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(any(feature = "crypto-aws-lc", feature = "crypto-legacy-rsa-decryption"))]
     fn software_rsa_test_options() -> AssertionDecryptionOptions {
         AssertionDecryptionOptions {
             allow_insecure_software_rsa_key_transport_decryption: cfg!(
@@ -210,6 +214,27 @@ mod tests {
             Err(SamlError::Unsupported(message))
                 if message.contains("RUSTSEC-2023-0071")
         ));
+        Ok(())
+    }
+
+    #[cfg(all(
+        feature = "crypto-rustcrypto",
+        not(feature = "crypto-legacy-rsa-decryption")
+    ))]
+    #[test]
+    fn runtime_rsa_opt_in_cannot_enable_disabled_backend() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let encrypted = encrypt_assertion(RESPONSE, SP_CERT, AES_256, RSA_OAEP_MGF1P, "saml")?;
+        assert!(encrypted.contains("EncryptedAssertion"));
+        let key = load_private_key(SP_PRIVKEY, None)?;
+        let options = AssertionDecryptionOptions {
+            allow_insecure_software_rsa_key_transport_decryption: true,
+        };
+        assert!(matches!(
+            decrypt_assertion(&encrypted, &key, options),
+            Err(SamlError::Crypto(message)) if message.contains("legacy-rsa-decryption")
+        ));
+        assert!(!encrypted.contains("<saml:Assertion"));
         Ok(())
     }
 

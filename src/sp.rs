@@ -271,6 +271,9 @@ impl ServiceProvider {
         binding: Binding,
         options: &LoginRequestOptions<'_>,
     ) -> Result<BindingContext, SamlError> {
+        let now = SystemTime::now();
+        self.metadata.validate_at(now)?;
+        idp.metadata.validate_at(now)?;
         if self.metadata.is_authn_request_signed() != idp.metadata.is_want_authn_requests_signed() {
             return Err(SamlError::Invalid(format!(
                 "ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG: SP AuthnRequestsSigned={} but IdP WantAuthnRequestsSigned={}",
@@ -628,6 +631,9 @@ impl ServiceProvider {
         correlation: LoginResponseCorrelation<'_>,
         options: LoginResponseParseOptions<'_>,
     ) -> Result<FlowResult, SamlError> {
+        let now = options.now.unwrap_or_else(SystemTime::now);
+        self.metadata.validate_at(now)?;
+        idp.metadata.validate_at(now)?;
         let signing_certs = idp.metadata.x509_certificates(CertUse::Signing);
         let decrypt_key = if self.setting.is_assertion_encrypted {
             self.setting.enc_private_key.as_deref()

@@ -206,6 +206,39 @@ pub type PendingAuthnRequest = Pending<AuthnRequest>;
 pub type PendingLogoutRequest = Pending<LogoutRequest>;
 
 impl<Message: PendingMessage> Pending<Message> {
+    pub(crate) fn with_local_lifetime(
+        mut self,
+        now: std::time::SystemTime,
+        lifetime: std::time::Duration,
+    ) -> Result<Self, SamlError> {
+        let field = crate::error::TimeWindowField::PendingRequestExpiration;
+        if lifetime.is_zero() {
+            return Err(SamlError::TimeWindowInvalid { field });
+        }
+        let expires_at = now
+            .checked_add(lifetime)
+            .ok_or(SamlError::TimeWindowInvalid { field })?;
+        let now = crate::validator::offset_datetime_from_system_time(now)
+            .map_err(|_| SamlError::TimeWindowInvalid { field })?;
+        let expires_at = crate::validator::offset_datetime_from_system_time(expires_at)
+            .map_err(|_| SamlError::TimeWindowInvalid { field })?;
+        let serialize = |instant: time::OffsetDateTime| {
+            let seconds = crate::entity::format_saml_utc_date_time(instant);
+            SamlInstant::try_new(format!(
+                "{}.{:09}Z",
+                seconds.trim_end_matches('Z'),
+                instant.nanosecond()
+            ))
+        };
+        if self.issued_at.is_none() {
+            self.issued_at = Some(serialize(now)?);
+        }
+        let existing = self.completion_deadline()?;
+        if existing.is_none_or(|deadline| deadline > expires_at) {
+            self.expires_at = Some(serialize(expires_at)?);
+        }
+        Ok(self)
+    }
     fn validate_common(
         relay_state: &RelayStateParam,
         peer_entity_id: &EntityId,
@@ -233,7 +266,8 @@ impl<Message: PendingMessage> Pending<Message> {
         self
     }
 
-    /// Record an expiration instant.
+    /// Record an expiration instant. Typed completion rejects this request
+    /// at or after the deadline, without clock-skew extension.
     pub fn with_expiration(mut self, expires_at: SamlInstant) -> Self {
         self.expires_at = Some(expires_at);
         self
@@ -259,9 +293,44 @@ impl<Message: PendingMessage> Pending<Message> {
         self.issued_at.as_ref()
     }
 
-    /// Expiration instant, if recorded.
+    /// Expiration instant, if recorded. `RequireCache` typed completion requires
+    /// this bound so its completed-request cache can cover every valid reuse.
     pub fn expires_at(&self) -> Option<&SamlInstant> {
         self.expires_at.as_ref()
+    }
+
+    pub(crate) fn validate_at(&self, now: std::time::SystemTime) -> Result<(), SamlError> {
+        let now = crate::validator::offset_datetime_from_system_time(now)?;
+        if let Some(deadline) = &self.expires_at {
+            let deadline = time::OffsetDateTime::parse(
+                deadline.as_str(),
+                &time::format_description::well_known::Rfc3339,
+            )
+            .map_err(|_| SamlError::TimeWindowInvalid {
+                field: crate::error::TimeWindowField::PendingRequestExpiration,
+            })?;
+            if now >= deadline {
+                return Err(SamlError::TimeWindowInvalid {
+                    field: crate::error::TimeWindowField::PendingRequestExpiration,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn completion_deadline(&self) -> Result<Option<time::OffsetDateTime>, SamlError> {
+        self.expires_at
+            .as_ref()
+            .map(|deadline| {
+                time::OffsetDateTime::parse(
+                    deadline.as_str(),
+                    &time::format_description::well_known::Rfc3339,
+                )
+                .map_err(|_| SamlError::TimeWindowInvalid {
+                    field: crate::error::TimeWindowField::PendingRequestExpiration,
+                })
+            })
+            .transpose()
     }
 }
 

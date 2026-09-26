@@ -472,10 +472,23 @@ fn flow_conformance_login_request_redirect_signed_unencrypted_pkcs8(
 #[test]
 fn flow_conformance_login_request_redirect_signed_encrypted_pkcs8(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    signed_request_with_key(
+    let result = signed_request_with_key(
         include_str!("fixtures/key/sp/privkey.encrypted.pkcs8.pem"),
         Some("VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px"),
-    )
+    );
+    #[cfg(feature = "crypto-rustcrypto")]
+    result?;
+    // This input must fail closed when the provider cannot load encrypted PKCS#8.
+    #[cfg(any(feature = "crypto-aws-lc", feature = "crypto-fips"))]
+    assert!(matches!(
+        result,
+        Err(error) if matches!(
+            error.downcast_ref::<SamlError>(),
+            Some(SamlError::Crypto(message))
+                if message.contains("encrypted PKCS#8 PEM is not available through the selected provider")
+        )
+    ));
+    Ok(())
 }
 
 // ----- create login response (12-15) -----
@@ -1120,6 +1133,25 @@ fn flow_conformance_send_custom_assertion_and_message_simplesign(
 // ----- encrypted assertion variants (43-47, 54) -----
 
 #[cfg(not(feature = "crypto-fips"))]
+fn assert_encrypted_response_policy(
+    result: Result<FlowResult, SamlError>,
+    expected_name_id: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if cfg!(all(
+        feature = "crypto-rustcrypto",
+        not(feature = "crypto-legacy-rsa-decryption")
+    )) {
+        assert!(matches!(
+            result,
+            Err(SamlError::Crypto(message)) if message.contains("legacy-rsa-decryption")
+        ));
+    } else {
+        assert_eq!(result?.extract.get_str("nameID"), Some(expected_name_id));
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "crypto-fips"))]
 #[test]
 fn flow_conformance_encrypted_nonsigned_assertion() -> Result<(), Box<dyn std::error::Error>> {
     let mut idp_setting = signing();
@@ -1136,9 +1168,10 @@ fn flow_conformance_encrypted_nonsigned_assertion() -> Result<(), Box<dyn std::e
             ..Default::default()
         },
     )?;
-    let parsed = parse_response_with_request_id(&sp, &idp, Binding::Post, &ctx, "_r")?;
-    assert_eq!(parsed.extract.get_str("nameID"), Some("e@example.com"));
-    Ok(())
+    assert_encrypted_response_policy(
+        parse_response_with_request_id(&sp, &idp, Binding::Post, &ctx, "_r"),
+        "e@example.com",
+    )
 }
 
 #[cfg(not(feature = "crypto-fips"))]
@@ -1175,9 +1208,10 @@ fn encrypted_signed(custom: bool, with_message: bool) -> Result<(), Box<dyn std:
     let ctx =
         idp.create_login_response(&sp, Binding::Post, &User::new("es@example.com"), &options)?;
     let request_id = if custom { "_req" } else { "_r" };
-    let parsed = parse_response_with_request_id(&sp, &idp, Binding::Post, &ctx, request_id)?;
-    assert_eq!(parsed.extract.get_str("nameID"), Some("es@example.com"));
-    Ok(())
+    assert_encrypted_response_policy(
+        parse_response_with_request_id(&sp, &idp, Binding::Post, &ctx, request_id),
+        "es@example.com",
+    )
 }
 
 #[cfg(not(feature = "crypto-fips"))]
@@ -1277,9 +1311,10 @@ fn flow_conformance_encrypted_nonsigned_assertion_encrypt_then_sign(
             ..Default::default()
         },
     )?;
-    let parsed = parse_response_with_request_id(&sp, &idp, Binding::Post, &ctx, "_r")?;
-    assert_eq!(parsed.extract.get_str("nameID"), Some("ets@example.com"));
-    Ok(())
+    assert_encrypted_response_policy(
+        parse_response_with_request_id(&sp, &idp, Binding::Post, &ctx, "_r"),
+        "ets@example.com",
+    )
 }
 
 // ----- logout request/response with & without signature (48-53) -----

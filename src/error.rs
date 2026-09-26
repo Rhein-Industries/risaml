@@ -104,6 +104,10 @@ pub enum TimeWindowField {
     Conditions,
     /// Replay cache retention window could not be computed or has elapsed.
     ReplayExpiration,
+    /// Metadata entity or role `validUntil` deadline.
+    MetadataValidUntil,
+    /// Stored pending request expiration.
+    PendingRequestExpiration,
 }
 
 impl fmt::Display for TimeWindowField {
@@ -114,6 +118,8 @@ impl fmt::Display for TimeWindowField {
             Self::SessionNotOnOrAfter => f.write_str("SessionNotOnOrAfter"),
             Self::Conditions => f.write_str("Conditions"),
             Self::ReplayExpiration => f.write_str("ReplayExpiration"),
+            Self::MetadataValidUntil => f.write_str("metadata validUntil"),
+            Self::PendingRequestExpiration => f.write_str("pending request expiration"),
         }
     }
 }

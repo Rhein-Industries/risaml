@@ -72,6 +72,10 @@ impl Default for ClockSkew {
     reason = "variants name the exact SAML identifier family used in stable cache keys"
 )]
 pub enum ReplayKey {
+    /// Completed local pending AuthnRequest ID (distinct from inbound requests).
+    CompletedAuthnRequestId(MessageId),
+    /// Completed local pending LogoutRequest ID.
+    CompletedLogoutRequestId(MessageId),
     /// SAML AuthnRequest ID.
     AuthnRequestId(MessageId),
     /// SAML LogoutRequest ID.
@@ -88,6 +92,8 @@ impl ReplayKey {
     /// Stable key family.
     pub fn kind(&self) -> &'static str {
         match self {
+            Self::CompletedAuthnRequestId(_) => "completed_authn_request_id",
+            Self::CompletedLogoutRequestId(_) => "completed_logout_request_id",
             Self::AuthnRequestId(_) => "authn_request_id",
             Self::LogoutRequestId(_) => "logout_request_id",
             Self::LogoutResponseId(_) => "logout_response_id",
@@ -99,6 +105,7 @@ impl ReplayKey {
     /// Raw SAML identifier value.
     pub fn value(&self) -> &str {
         match self {
+            Self::CompletedAuthnRequestId(id) | Self::CompletedLogoutRequestId(id) => id.as_str(),
             Self::AuthnRequestId(id) | Self::LogoutRequestId(id) | Self::LogoutResponseId(id) => {
                 id.as_str()
             }
@@ -163,6 +170,10 @@ impl ReplayKey {
 pub trait ReplayCache {
     /// Check whether `key` has already been seen, then store it until
     /// `expires_at` if it is new.
+    /// Completed request keys must be retained through the supplied pending
+    /// expiry. Check-and-store must be atomic across every worker that can
+    /// finish the same browser transaction; separate worker-local caches do
+    /// not enforce one-time completion in a distributed application.
     ///
     /// # Errors
     ///
@@ -234,6 +245,18 @@ impl<'a> SamlValidationContext<'a> {
 
     pub(crate) fn replay_policy(&mut self) -> &mut ReplayPolicy<'a> {
         &mut self.replay
+    }
+
+    pub(crate) fn require_pending_expiration(
+        &self,
+        deadline: Option<OffsetDateTime>,
+    ) -> Result<(), SamlError> {
+        if matches!(&self.replay, ReplayPolicy::RequireCache(_)) && deadline.is_none() {
+            return Err(SamlError::TimeWindowInvalid {
+                field: TimeWindowField::PendingRequestExpiration,
+            });
+        }
+        Ok(())
     }
 
     pub(crate) fn check_and_store_message_replay(

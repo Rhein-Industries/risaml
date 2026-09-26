@@ -2,6 +2,7 @@
 
 pub mod generate;
 pub mod idp;
+mod policy;
 pub mod sp;
 mod write;
 
@@ -21,7 +22,9 @@ pub use sp::SpMetadata;
 use crate::constants::{Binding, CertUse};
 use crate::error::SamlError;
 use crate::util::Value;
-use crate::xml::{dom, extract_with_limits, ExtractorField, XmlLimits};
+use crate::xml::{dom, extract_with_limits, ExtractorField, LocalPath, XmlLimits};
+use std::time::SystemTime;
+use time::OffsetDateTime;
 
 fn base_fields() -> Vec<ExtractorField> {
     vec![
@@ -78,6 +81,7 @@ fn location_for_binding(value: Option<&Value>, binding: Binding) -> Option<Strin
 pub struct Metadata {
     xml: String,
     pub(crate) meta: Value,
+    valid_until: Option<OffsetDateTime>,
 }
 
 impl Metadata {
@@ -104,6 +108,15 @@ impl Metadata {
         extra: Vec<ExtractorField>,
         limits: XmlLimits,
     ) -> Result<Self, SamlError> {
+        Self::parse_for_role_with_limits(xml, extra, limits, None)
+    }
+
+    pub(crate) fn parse_for_role_with_limits(
+        xml: &str,
+        extra: Vec<ExtractorField>,
+        limits: XmlLimits,
+        role: Option<&str>,
+    ) -> Result<Self, SamlError> {
         let roots = dom::parse_roots_with_limits(xml, limits)?;
         if roots
             .iter()
@@ -116,25 +129,50 @@ impl Metadata {
             ));
         }
 
+        let root = roots.first().filter(|root| roots.len() == 1 && root.local_name == "EntityDescriptor")
+            .ok_or_else(|| SamlError::Unsupported("metadata import requires a standalone EntityDescriptor; aggregate parent validity cannot be discarded".into()))?;
+        policy::validate_metadata_namespaces(xml)?;
+        let roles: Vec<_> = root
+            .children
+            .iter()
+            .filter(|child| {
+                role.map_or_else(
+                    || {
+                        matches!(
+                            child.local_name.as_str(),
+                            "SPSSODescriptor" | "IDPSSODescriptor"
+                        )
+                    },
+                    |role| child.local_name == role,
+                )
+            })
+            .collect();
+        if role.is_some() && roles.is_empty() {
+            return Err(SamlError::MissingMetadata(role.unwrap_or_default().into()));
+        }
+        let valid_until = policy::effective_expiration(root, &roles)?;
+
         let mut fields = base_fields();
         fields.extend(extra);
+        if let Some(role) = role {
+            for field in &mut fields {
+                if let LocalPath::Single(path) = &mut field.local_path {
+                    for element in path {
+                        if element == "~SSODescriptor" {
+                            *element = role.to_string();
+                        }
+                    }
+                }
+            }
+        }
         let mut meta = extract_with_limits(xml, &fields, limits)?;
 
-        // A single shared certificate is used for both signing and encryption.
-        if let Some(shared) = meta.get_str("sharedCertificate") {
-            let shared = shared.to_string();
-            meta.insert(
-                "certificate",
-                Value::Object(vec![
-                    ("signing".into(), Value::Str(shared.clone())),
-                    ("encryption".into(), Value::Str(shared)),
-                ]),
-            );
-        }
+        meta.insert("certificate", policy::certificates_for_roles(&roles)?);
 
         Ok(Self {
             xml: xml.to_string(),
             meta,
+            valid_until,
         })
     }
 
@@ -146,6 +184,30 @@ impl Metadata {
     /// `entityID`.
     pub fn get_entity_id(&self) -> Option<&str> {
         self.meta.get_str("entityID")
+    }
+
+    /// Earliest declared validity deadline across the entity and imported SSO
+    /// role descriptors. Missing validity is distinct from cache staleness.
+    pub fn valid_until(&self) -> Option<OffsetDateTime> {
+        self.valid_until
+    }
+
+    /// Enforce metadata validity at its use instant, including after storage.
+    /// Approved Errata 05 E94 adds Metadata 4.3.2: expired metadata MUST NOT
+    /// be used. No clock skew extends this metadata deadline.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SamlError::TimeWindowInvalid`] at or after `validUntil`, or
+    /// when the supplied clock cannot be represented.
+    pub fn validate_at(&self, now: SystemTime) -> Result<(), SamlError> {
+        let now = crate::validator::offset_datetime_from_system_time(now)?;
+        if self.valid_until.is_some_and(|deadline| now >= deadline) {
+            return Err(SamlError::TimeWindowInvalid {
+                field: crate::error::TimeWindowField::MetadataValidUntil,
+            });
+        }
+        Ok(())
     }
 
     /// Declared `<NameIDFormat>` values.
@@ -180,7 +242,18 @@ impl Metadata {
 
     /// First X.509 certificate declared for `use`.
     pub fn get_x509_certificate(&self, use_: CertUse) -> Option<String> {
-        self.x509_certificates(use_).into_iter().next()
+        match self
+            .meta
+            .get("certificate")
+            .and_then(|certificates| certificates.get_key(use_.as_str()))
+        {
+            Some(Value::Str(certificate)) => Some(certificate.clone()),
+            Some(Value::Array(certificates)) => certificates
+                .iter()
+                .find_map(Value::as_str)
+                .map(str::to_string),
+            Some(Value::Null | Value::Object(_)) | None => None,
+        }
     }
 
     /// `SingleLogoutService` location for `binding`.
@@ -303,6 +376,21 @@ mod tests {
     #[test]
     fn rejects_multiple_entity_descriptors() {
         assert!(Metadata::parse(MULTIPLE, Vec::new()).is_err());
+    }
+
+    #[test]
+    fn first_certificate_lookup_preserves_rolling_order() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let metadata = IdpMetadata::from_xml(include_str!(
+            "../../tests/fixtures/misc/idpmeta_rollingcert.xml"
+        ))?;
+        let certificates = metadata.x509_certificates(CertUse::Signing);
+        assert_eq!(certificates.len(), 2);
+        assert_eq!(
+            metadata.get_x509_certificate(CertUse::Signing).as_ref(),
+            certificates.first()
+        );
+        Ok(())
     }
 
     #[test]

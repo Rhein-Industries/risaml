@@ -1,6 +1,6 @@
 use risaml::binding::{
-    deflate_raw_decode, deflate_raw_encode, saml_post_binding_form, try_saml_post_binding_form,
-    xml_escape,
+    base64_decode, base64_decode_with_limit, base64_encode, deflate_raw_decode, deflate_raw_encode,
+    saml_post_binding_form, try_saml_post_binding_form, xml_escape,
 };
 use risaml::constants::Binding;
 use risaml::entity::BindingContext;
@@ -48,6 +48,50 @@ fn deflate_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
     let restored = deflate_raw_decode(&compressed)?;
     assert_eq!(restored, original);
     Ok(())
+}
+
+#[test]
+fn base64_decode_preserves_whitespace_normalization() -> Result<(), Box<dyn std::error::Error>> {
+    for encoded in [
+        "c2FtbA==",
+        "\t c2FtbA==\r\n",
+        "c2Ft\r\nbA==",
+        "\u{2003}c2Ft\u{a0}bA==\u{2002}",
+    ] {
+        assert_eq!(base64_decode(encoded)?, b"saml");
+        assert_eq!(base64_decode_with_limit(encoded, 64)?, b"saml");
+    }
+    for encoded in ["", " \r\n\t", "\u{2003}\u{a0}"] {
+        assert!(base64_decode(encoded)?.is_empty());
+        assert!(base64_decode_with_limit(encoded, 64)?.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn base64_decode_bounded_preserves_exact_output_limit() -> Result<(), Box<dyn std::error::Error>> {
+    // All three payloads encode to four base64 bytes; only the decoded length
+    // decides whether a cap inside that quartet is sufficient.
+    for original in [b"s".as_slice(), b"sa".as_slice(), b"sam".as_slice()] {
+        let encoded = base64_encode(original);
+        assert_eq!(
+            base64_decode_with_limit(&encoded, original.len())?,
+            original
+        );
+        assert!(matches!(
+            base64_decode_with_limit(&encoded, original.len() - 1),
+            Err(SamlError::Invalid(message)) if message == "ERR_BASE64_OUTPUT_LIMIT_EXCEEDED"
+        ));
+    }
+    Ok(())
+}
+
+#[test]
+fn base64_decode_rejects_invalid_compact_and_wrapped_inputs() {
+    for encoded in ["c2FtbA=!", " c2Ft\nbA=! ", "c2FtbA=", "c2Ft\nbA="] {
+        assert!(base64_decode(encoded).is_err());
+        assert!(base64_decode_with_limit(encoded, 64).is_err());
+    }
 }
 
 #[test]
