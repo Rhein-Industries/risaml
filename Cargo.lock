@@ -1677,6 +1677,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41b1177fdf999d2321d3fb46ff47159d9c1fb9ad66a4879f8c50a0b504615e9b"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1928,7 +1937,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fda60908e55f80143e682a07591d94315ef745af3371f04070cbc1f7e54afd1b"
 dependencies = [
- "quick-xml",
+ "quick-xml 0.41.0",
  "ribergshamra-core",
  "uppsala",
 ]
@@ -2009,7 +2018,7 @@ version = "0.7.0"
 dependencies = [
  "base64 0.23.0",
  "flate2",
- "quick-xml",
+ "quick-xml 0.42.0",
  "ribergshamra",
  "thiserror",
  "time",
